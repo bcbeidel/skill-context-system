@@ -109,16 +109,16 @@ What happened
 What to remember
 ```
 
-### Task 0.5: Baseline Measurement Report
+### Task 0.5: Baseline Measurement Report ✅ COMPLETE
 **Spec**: spec-0-quick-start.md
 **Dependencies**: Task 0.3
 **Estimate**: S
 
 **Acceptance Criteria**:
-- [ ] Run token inventory on test repository
-- [ ] Generate baseline report: total files, total tokens, file size distribution
-- [ ] Save to `~/.claude/analytics/baseline.txt`
-- [ ] Report includes top 10 largest files
+- [x] Run token inventory on test repository
+- [x] Generate baseline report: total files, total tokens, file size distribution
+- [x] Save to `~/.claude/analytics/baseline.txt`
+- [x] Report includes top 10 largest files
 
 **Implementation**:
 ```bash
