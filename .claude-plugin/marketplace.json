@@ -1,0 +1,17 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "dewey",
+  "version": "1.0.0",
+  "description": "Context optimization plugins for Claude Code",
+  "owner": {
+    "name": "Brandon Beidel"
+  },
+  "plugins": [
+    {
+      "name": "dewey",
+      "description": "Context optimization plugin for Claude Code - intelligently manage, analyze, and optimize your context files",
+      "source": "./dewey",
+      "category": "productivity"
+    }
+  ]
+}
