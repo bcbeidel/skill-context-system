@@ -84,47 +84,80 @@ def generate_refactor_prompt(request: AnalysisRequest) -> str:
 {request.content}
 ```
 
-**Task**: Analyze this content and refactor it into a semantic folder structure:
+**Task**: Analyze this content and refactor it into a CLEAN, hierarchical folder structure.
 
-1. **Determine semantic folder name** (based on content theme):
-   - Analyze the overarching theme of the content
-   - Choose a name that reflects the CONTENT, not the old filename
-   - Use lowercase-with-hyphens (kebab-case)
-   - Examples: "cooking" (not "recipes"), "project-phases" (not "IMPLEMENTATION_PLAN")
+**CRITICAL NAMING RULES:**
+1. **Folder name** - Simple, clean, semantic:
+   - Think hierarchically: broad concept → specific topic
+   - NO timestamps (no "2026-02", no dates)
+   - NO synthesis/collection suffixes (no "synthesis", "collection")
+   - Use the CORE CONCEPT only
+   - Examples: "best-practices" (not "best-practices-synthesis-2026-02")
+   - Examples: "cooking" (not "recipes-collection"), "api" (not "api-reference-v2")
 
-2. **Main file** (~{request.target_main_lines} lines) - Will be saved as `main.md`:
-   - Essential overview/introduction
-   - Key high-level concepts
-   - Clear navigation to detailed sections
-   - Scannable structure
+2. **File names** - Clean topic names:
+   - NO numbered prefixes (no "theme-1-", "section-2-", "part-3-")
+   - NO redundant context (folder already provides it)
+   - Just the topic name: "progressive-disclosure.md" (not "theme-1-progressive-disclosure.md")
+   - Examples: "italian-pasta.md", "french-desserts.md", "quality-testing.md"
 
-3. **Supporting files** (1-3 topically organized) - Will be saved alongside main.md:
-   - Group related content together
-   - Self-contained sections
-   - Descriptive names (e.g., "italian-pasta", "french-desserts", "phase-1-tasks")
-   - Link back to main file
+3. **Hierarchical thinking**:
+   - The filepath should tell a story from broad → narrow
+   - Example: skills/best-practices/progressive-disclosure.md
+   - Reads as: "Skills area → Best practices topic → Specific practice"
 
-**Best Practices**:
-- Folder name must be semantic and theme-based
-- Maintain semantic coherence (don't break mid-section)
-- Preserve ALL information (no content loss)
-- Create clear navigation (bidirectional links)
-- Use descriptive headers
-- Group by topic/theme, not arbitrary lines
+**Structure to create:**
+
+Main file (~{request.target_main_lines} lines) as `main.md`:
+- Essential overview
+- Navigation to supporting files
+- Scannable structure
+
+Supporting files (3-10 topically organized):
+- One clear topic per file
+- Clean, descriptive names (no prefixes)
+- Self-contained content
+- Link back to main
+
+**Quality checks**:
+- ✅ Folder name is simple and semantic (no dates, no suffixes)
+- ✅ File names are clean topics (no "theme-1-", no "part-2-")
+- ✅ Filepath reads as a logical hierarchy
+- ✅ All information preserved
+- ✅ Clear navigation with bidirectional links
 
 **Output Format** (JSON):
 ```json
 {{
-  "folder_name": "semantic-theme-name",
+  "folder_name": "core-concept",
   "main_content": "the refactored main.md content with overview and navigation",
   "reference_sections": [
     {{
-      "name": "descriptive-kebab-case-name",
+      "name": "topic-name",
+      "content": "full content for this supporting file"
+    }},
+    {{
+      "name": "another-topic",
       "content": "full content for this supporting file"
     }}
   ],
   "summary": "brief description of organizational strategy",
-  "reasoning": "explanation of why content was grouped this way and folder naming choice"
+  "reasoning": "explanation of folder naming and content organization"
+}}
+```
+
+**Example for a best practices document:**
+```json
+{{
+  "folder_name": "best-practices",
+  "main_content": "...",
+  "reference_sections": [
+    {{"name": "progressive-disclosure", "content": "..."}},
+    {{"name": "description-discovery", "content": "..."}},
+    {{"name": "tool-definition", "content": "..."}}
+  ],
+  "summary": "Organized into core practices",
+  "reasoning": "Folder 'best-practices' is the core concept. Files are clean topic names without prefixes."
 }}
 ```
 

@@ -1,7 +1,7 @@
 {
   "name": "dewey",
   "description": "Context optimization plugin for Claude Code - intelligently manage, analyze, and optimize your context files (uses only Python built-in libraries)",
-  "version": "0.0.8",
+  "version": "0.0.9",
   "author": {
     "name": "Dewey Contributors"
   },
