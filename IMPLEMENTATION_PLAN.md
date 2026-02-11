@@ -1,973 +1,766 @@
-# Dewey Universal Context Optimizer - Implementation Plan
+# Dewey Context Optimizer - Implementation Plan v2.0
 
 **Created**: 2026-02-10
-**Status**: Planning Phase Complete
-**Current Phase**: Phase 0 (Foundation)
+**Updated**: 2026-02-10
+**Status**: Active Development
+**Current Phase**: Phase 0 (Foundation) → Phase 1 (Core Skills)
 
 ---
 
 ## Overview
 
-This plan implements "Dewey" - a universal context optimization plugin compatible with Claude Code, OpenAI Codex, and Google Gemini. The approach follows "Start Small" philosophy: measure first, optimize incrementally, validate continuously.
+Dewey is a **Claude Code plugin** that optimizes context management through intelligent skills. This plan focuses on building an excellent Claude Code experience first, with multi-provider support deferred to later phases.
+
+**Design Philosophy**:
+- **Skills-first**: All features exposed as native `/dewey-*` skills
+- **No API keys**: Leverage existing Claude Code session
+- **Zero additional cost**: Included in user's Claude usage
+- **Python helpers**: Support identification and file operations
+- **One provider, done well**: Claude Code excellence before expansion
 
 **Key Principles**:
 - Measure before optimizing
-- One change at a time
+- Skills over separate CLI tools
 - Quick wins first
 - Data-driven decisions
 - Transparent recommendations (PRs, not auto-commits)
 
 ---
 
-## Phase 0: Foundation (Week 1) - Quick Start
+## Architecture
 
-**Goal**: Establish baseline and infrastructure
+### Skill-Based Design Pattern
 
-### Task 0.1: Project Structure Setup ✅ COMPLETE
-**Spec**: spec-0-quick-start.md
-**Dependencies**: None
-**Estimate**: S (Small)
-
-**Acceptance Criteria**:
-- [x] Create `dewey/` directory structure as defined in seed prompt
-- [x] Initialize Python package with `pyproject.toml`
-- [x] Set up `src/`, `tests/`, `scripts/`, `templates/` directories
-- [x] Create `README.md` with project overview
-- [x] Initialize git repository with `.gitignore`
-
-**Implementation**:
-```bash
-mkdir -p dewey/{src,tests,scripts,templates}
-cd dewey
-git init
+```
+┌─────────────────────────────────────────────────────────┐
+│                  Claude Code Session                     │
+│                                                          │
+│  User: /dewey-split large-file.md                      │
+│    ↓                                                     │
+│  Skill Definition: .claude/skills/dewey-split.md       │
+│    ↓                                                     │
+│  Python Helpers: dewey/core/compaction/                 │
+│    - Identify large files                               │
+│    - Read content                                        │
+│    ↓                                                     │
+│  Claude Analysis: (uses current session - no API!)     │
+│    - Semantic understanding                              │
+│    - Anthropic best practices                           │
+│    - Intelligent refactoring                             │
+│    ↓                                                     │
+│  Python Helpers: Write files, create backups            │
+│    ↓                                                     │
+│  Report: Display results to user                        │
+└─────────────────────────────────────────────────────────┘
 ```
 
-### Task 0.2: Core Dependencies Setup ✅ COMPLETE
-**Spec**: spec-0-quick-start.md
-**Dependencies**: Task 0.1
-**Estimate**: S
+### File Structure
 
-**Acceptance Criteria**:
-- [x] Create `pyproject.toml` with dependencies: pandas, pyyaml, click, pytest, ruff, mypy
-- [x] Set up virtual environment
-- [x] Install development dependencies
-- [x] Configure ruff and mypy
-
-**Implementation**:
-```bash
-python -m venv venv
-source venv/bin/activate
-pip install -e ".[dev]"
 ```
-
-### Task 0.3: Token Inventory Script ✅ COMPLETE
-**Spec**: spec-0-quick-start.md, spec-1-measurement.md
-**Dependencies**: Task 0.2
-**Estimate**: M (Medium)
-
-**Acceptance Criteria**:
-- [x] Script counts all files in context directory
-- [x] Estimates tokens (4 chars ≈ 1 token)
-- [x] Outputs CSV: file, lines, bytes, tokens
-- [x] Can run in <10 seconds on 200 files
-- [x] Saves to `~/.claude/analytics/context-inventory.csv`
-
-**Implementation**:
-```python
-# scripts/analyze-usage.py --inventory
-def count_tokens(file_path):
-    with open(file_path) as f:
-        content = f.read()
-    return len(content) // 4  # 4 chars ≈ 1 token
-```
-
-### Task 0.4: Session Tracking Template ✅ COMPLETE
-**Spec**: spec-0-quick-start.md, spec-3-memory-tier.md
-**Dependencies**: Task 0.2
-**Estimate**: S
-
-**Acceptance Criteria**:
-- [x] Create session template with sections: Goal, Files Used, Outcomes, Learnings
-- [x] Template in `.claude/sessions/template.md`
-- [x] Documentation for manual usage
-- [x] Example session file included
-
-**Implementation**:
-```markdown
-# Session: [YYYY-MM-DD] - [Brief Title]
-## Goal
-What I'm trying to accomplish
-
-## Files Loaded
-- file1.md (reason)
-- file2.md (reason)
-
-## Outcomes
-What happened
-
-## Learnings
-What to remember
-```
-
-### Task 0.5: Baseline Measurement Report ✅ COMPLETE
-**Spec**: spec-0-quick-start.md
-**Dependencies**: Task 0.3
-**Estimate**: S
-
-**Acceptance Criteria**:
-- [x] Run token inventory on test repository
-- [x] Generate baseline report: total files, total tokens, file size distribution
-- [x] Save to `~/.claude/analytics/baseline.txt`
-- [x] Report includes top 10 largest files
-
-**Implementation**:
-```bash
-python scripts/analyze-usage.py --inventory --report
-```
-
-### Task 0.6: First Quick Win - File Splitting
-**Spec**: spec-0-quick-start.md, spec-2-compaction.md
-**Dependencies**: Task 0.5
-**Estimate**: M
-
-**Acceptance Criteria**:
-- [ ] Identify files >500 lines from inventory
-- [ ] Script to split file into main + references/
-- [ ] Update wikilinks automatically
-- [ ] Before/after comparison report
-- [ ] Backup created before splitting
-
-**Implementation**:
-```python
-# scripts/consolidate.sh --split large-file.md
-def split_file(path, max_lines=500):
-    # Split into main (first 150 lines) + references/
-    pass
+dewey/
+├── .claude/
+│   └── skills/              # Skill definitions
+│       ├── dewey-split.md
+│       ├── dewey-analyze.md
+│       ├── dewey-report.md
+│       ├── dewey-optimize.md
+│       └── dewey-check.md
+├── src/dewey/
+│   ├── core/
+│   │   ├── measurement/     # Token counting, frequency tracking
+│   │   ├── compaction/      # File splitting, deduplication
+│   │   ├── memory/          # Session management, promotion
+│   │   └── analytics/       # Dashboard generation, KPIs
+│   └── skills/              # Skill implementation helpers
+│       ├── split_skill.py
+│       ├── analyze_skill.py
+│       └── report_skill.py
+├── scripts/                 # Helper CLI tools
+│   ├── identify-large-files.py
+│   └── analyze-usage.py
+└── tests/                   # Comprehensive test suite
 ```
 
 ---
 
-## Phase 1: Measurement System (Weeks 2-4)
+## Phase 0: Foundation ✅ COMPLETE
 
-**Goal**: Build analytics foundation for data-driven optimization
+**Goal**: Establish baseline and infrastructure
+**Status**: Complete (5/5 tasks done, 1 enhanced)
 
-### Task 1.1: Token Counter Module
-**Spec**: spec-1-measurement.md
+### Completed Tasks
+
+- ✅ **Task 0.1**: Project Structure Setup
+- ✅ **Task 0.2**: Core Dependencies Setup
+- ✅ **Task 0.3**: Token Inventory Script
+- ✅ **Task 0.4**: Session Tracking Template
+- ✅ **Task 0.5**: Baseline Measurement Report
+- ✅ **Task 0.6**: Intelligent File Splitting (skill-based!)
+
+**Key Achievement**: Established skill-based design pattern
+
+---
+
+## Phase 1: Core Claude Code Skills (Weeks 2-3)
+
+**Goal**: Build essential skills for context optimization
+**Focus**: Measurement, analysis, and quick wins
+
+### Task 1.1: `/dewey-analyze` Skill
+**Priority**: High
+**Dependencies**: Task 0.5
+**Estimate**: M
+
+**Description**: Analyze context usage and generate insights
+
+**Acceptance Criteria**:
+- [ ] Skill definition: `.claude/skills/dewey-analyze.md`
+- [ ] Usage: `/dewey-analyze [directory]`
+- [ ] Analyzes all files in context
+- [ ] Reports: token usage, file sizes, distribution
+- [ ] Identifies optimization opportunities
+- [ ] Generates actionable recommendations
+- [ ] No API key required (uses session)
+
+**Implementation**:
+```python
+# src/dewey/skills/analyze_skill.py
+def analyze_context(directory: Path) -> AnalysisReport:
+    """
+    Python helpers:
+    1. Scan directory for files
+    2. Count tokens, lines, sizes
+    3. Return data to skill
+
+    Skill (Claude):
+    4. Analyze patterns
+    5. Identify issues (large files, duplicates, etc.)
+    6. Generate recommendations
+    7. Format report
+    """
+```
+
+**Output Example**:
+```
+📊 Context Analysis Report
+================================
+
+Total Files: 47
+Total Tokens: 125,000
+Average: 2,659 tokens/file
+
+⚠️  Issues Found:
+  1. 3 files over 500 lines
+  2. Duplicate content detected (15%)
+  3. 5 files loaded but never cited
+
+💡 Recommendations:
+  1. /dewey-split IMPLEMENTATION_PLAN.md
+  2. /dewey-dedupe context/
+  3. Archive unused files
+```
+
+---
+
+### Task 1.2: `/dewey-report` Skill
+**Priority**: High
+**Dependencies**: Task 1.1
+**Estimate**: S
+
+**Description**: Generate weekly dashboard reports
+
+**Acceptance Criteria**:
+- [ ] Skill definition: `.claude/skills/dewey-report.md`
+- [ ] Usage: `/dewey-report [--weekly|--monthly]`
+- [ ] Reads CSV logs from measurement tracking
+- [ ] Generates markdown dashboard
+- [ ] Shows trends (week-over-week)
+- [ ] Highlights wins and concerns
+- [ ] Saves to `.claude/analytics/dashboard.md`
+
+**Implementation**:
+```python
+# Uses pandas to analyze frequency.csv logs
+# Skill formats insights and trends
+```
+
+---
+
+### Task 1.3: Token Counter Module (Enhanced)
+**Priority**: Medium
 **Dependencies**: Task 0.3
 **Estimate**: M
 
 **Acceptance Criteria**:
-- [ ] Python module `src/core/measurement/token_counter.py`
-- [ ] Accurate token estimation (4 chars ≈ 1 token)
-- [ ] Support for different encodings (UTF-8, ASCII)
-- [ ] Type hints and docstrings
-- [ ] Unit tests with >80% coverage
+- [x] Module: `src/core/measurement/token_counter.py` (exists)
+- [ ] Enhanced with precise token counting (tiktoken)
+- [ ] Support for different model tokenizers
+- [ ] Batch processing optimization
+- [ ] Type hints and comprehensive tests
 
 **Implementation**:
 ```python
-def estimate_tokens(text: str) -> int:
-    """Estimate tokens using 4 chars ≈ 1 token heuristic"""
-    return len(text) // 4
+def estimate_tokens_precise(text: str, model: str = "claude-3") -> int:
+    """Use tiktoken for precise counting"""
 ```
 
-### Task 1.2: Frequency Tracker Module
-**Spec**: spec-1-measurement.md
-**Dependencies**: Task 1.1
+---
+
+### Task 1.4: Frequency Tracker Module
+**Priority**: Medium
+**Dependencies**: Task 1.3
 **Estimate**: M
 
+**Description**: Track which files are loaded in each session
+
 **Acceptance Criteria**:
-- [ ] Module `src/core/measurement/frequency_tracker.py`
+- [ ] Module: `src/core/measurement/frequency_tracker.py`
 - [ ] CSV logging: timestamp, file, tokens, session_id
 - [ ] Thread-safe logging
 - [ ] Log rotation (keep 90 days)
-- [ ] Tests for concurrent access
+- [ ] Integration with Claude Code hooks (if available)
 
 **Implementation**:
 ```python
 # Logs to ~/.claude/analytics/frequency.csv
 def log_file_load(file_path: str, tokens: int, session_id: str):
-    pass
-```
-
-### Task 1.3: Citation Tracker Module
-**Spec**: spec-1-measurement.md
-**Dependencies**: Task 1.2
-**Estimate**: L (Large)
-
-**Acceptance Criteria**:
-- [ ] Module `src/core/measurement/citation_tracker.py`
-- [ ] Grep-based phrase matching (extract key phrases from files)
-- [ ] Track which loaded files appear in responses
-- [ ] CSV output: file, citation_count, utilization_rate
-- [ ] Handle edge cases (partial matches, synonyms)
-
-**Implementation**:
-```python
-def extract_key_phrases(file_path: str) -> List[str]:
-    """Extract headers, code blocks, unique terms"""
-    pass
-
-def check_citations(response: str, loaded_files: List[str]) -> Dict:
-    """Check which files were referenced in response"""
-    pass
-```
-
-### Task 1.4: Analytics Logger
-**Spec**: spec-4-analytics.md
-**Dependencies**: Task 1.3
-**Estimate**: M
-
-**Acceptance Criteria**:
-- [ ] Module `src/core/analytics/logger.py`
-- [ ] Unified logging interface for all trackers
-- [ ] Structured logging (JSON + CSV)
-- [ ] Privacy-preserving (no PII in logs)
-- [ ] Configurable log levels
-
-**Implementation**:
-```python
-class AnalyticsLogger:
-    def log_session(self, session_data: dict): pass
-    def log_file_load(self, file_data: dict): pass
-    def log_citation(self, citation_data: dict): pass
-```
-
-### Task 1.5: Weekly Dashboard Generator
-**Spec**: spec-4-analytics.md
-**Dependencies**: Task 1.4
-**Estimate**: L
-
-**Acceptance Criteria**:
-- [ ] Module `src/core/analytics/dashboard_generator.py`
-- [ ] Pandas-based analysis of CSV logs
-- [ ] Markdown report with metrics:
-  - Context utilization
-  - Token efficiency
-  - Most/least valuable files
-  - Citation rates
-  - Week-over-week trends
-- [ ] Automated generation via cron/scheduler
-- [ ] Tests with sample data
-
-**Implementation**:
-```python
-def generate_weekly_dashboard() -> str:
-    """Generate markdown dashboard from analytics CSVs"""
-    # Read frequency.csv, citations.csv
-    # Calculate metrics
-    # Format as markdown
-    pass
+    """Log file access for analytics"""
 ```
 
 ---
 
-## Phase 2: Optimization & Memory (Month 2)
+### Task 1.5: `/dewey-check` Skill
+**Priority**: High
+**Dependencies**: Tasks 1.1, 1.3
+**Estimate**: M
 
-**Goal**: Implement compaction and mid-term memory tier
+**Description**: Pre-commit hook style checks for context quality
 
-### Task 2.1: File Splitter
-**Spec**: spec-2-compaction.md
+**Acceptance Criteria**:
+- [ ] Skill definition: `.claude/skills/dewey-check.md`
+- [ ] Usage: `/dewey-check [--fast]`
+- [ ] Validates:
+  - File sizes <500 lines
+  - No dead links
+  - No excessive duplication
+  - Token budget within limits
+- [ ] Fast mode: <2 seconds for 200 files
+- [ ] Exit codes: pass/warn/fail
+- [ ] Integration with git hooks (optional)
+
+**Implementation**:
+```python
+def check_context_quality(directory: Path) -> QualityReport:
+    """Run quality checks and return report"""
+```
+
+---
+
+## Phase 2: Optimization Skills (Weeks 4-6)
+
+**Goal**: Implement intelligent optimization features
+**Focus**: Compaction, deduplication, memory management
+
+### Task 2.1: `/dewey-split` Skill ✅ COMPLETE
+**Priority**: High
 **Dependencies**: Task 0.6
 **Estimate**: L
 
-**Acceptance Criteria**:
-- [ ] Module `src/core/compaction/file_splitter.py`
-- [ ] Automated splitting for files >500 lines
-- [ ] Preserves first 150 lines as main file
-- [ ] Moves remaining content to references/ subdirectory
-- [ ] Updates all wikilinks across repository
-- [ ] Creates git commits with clear history
-- [ ] Dry-run mode for preview
+**Status**: Complete (implemented in Task 0.6)
 
-**Implementation**:
-```python
-def split_large_file(path: str, max_lines: int = 500) -> SplitResult:
-    """Split file into main + references/"""
-    pass
+**Features**:
+- ✅ Intelligent file splitting with semantic analysis
+- ✅ Uses current Claude Code session (no API key)
+- ✅ Follows Anthropic best practices
+- ✅ Creates topically organized references
+- ✅ Backup and navigation
 
-def update_wikilinks(old_path: str, new_paths: List[str]):
-    """Update [[wikilinks]] across repository"""
-    pass
-```
+---
 
-### Task 2.2: Duplicate Content Detector
-**Spec**: spec-2-compaction.md
+### Task 2.2: `/dewey-dedupe` Skill
+**Priority**: High
 **Dependencies**: Task 2.1
 **Estimate**: L
 
+**Description**: Identify and remove duplicate content
+
 **Acceptance Criteria**:
-- [ ] Module `src/core/compaction/duplicate_detector.py`
-- [ ] Paragraph-level hashing (MD5 or SHA256)
-- [ ] Identify duplicates across files
-- [ ] Report with locations and similarity scores
-- [ ] Suggestion to consolidate to canonical location
-- [ ] Ignore code blocks and common boilerplate
+- [ ] Skill definition: `.claude/skills/dewey-dedupe.md`
+- [ ] Usage: `/dewey-dedupe [directory] [--dry-run]`
+- [ ] Paragraph-level hashing
+- [ ] Identifies duplicates across files
+- [ ] Skill (Claude) decides:
+  - Which instance to keep (canonical)
+  - How to update references
+  - Whether content is truly duplicate
+- [ ] Preserves git history
+- [ ] Creates consolidation report
 
 **Implementation**:
 ```python
-def hash_paragraphs(file_path: str) -> Dict[str, str]:
-    """Return {hash: paragraph_text}"""
-    pass
-
-def find_duplicates(repo_path: str) -> List[Duplicate]:
-    """Find duplicate paragraphs across files"""
-    pass
+# Python: Hash paragraphs, find matches
+# Skill: Semantic analysis, decide canonical location
+# Python: Update files, create report
 ```
 
-### Task 2.3: Dead Link Checker
-**Spec**: spec-2-compaction.md
-**Dependencies**: Task 2.1
+---
+
+### Task 2.3: `/dewey-archive` Skill
+**Priority**: Medium
+**Dependencies**: Task 1.4
 **Estimate**: M
 
-**Acceptance Criteria**:
-- [ ] Module `src/core/compaction/duplicate_detector.py` (extended)
-- [ ] Parse [[wikilinks]] and [markdown](links)
-- [ ] Verify targets exist
-- [ ] Report broken links with suggestions
-- [ ] CI/CD integration (fail on broken links)
-
-**Implementation**:
-```python
-def check_links(file_path: str) -> List[BrokenLink]:
-    """Check all links in file"""
-    pass
-```
-
-### Task 2.4: Time-Based Archival
-**Spec**: spec-2-compaction.md
-**Dependencies**: Task 2.2
-**Estimate**: M
+**Description**: Archive old or unused files
 
 **Acceptance Criteria**:
-- [ ] Script to archive files >90 days old
-- [ ] Configurable age threshold
-- [ ] Moves to `archive/YYYY/` directory
-- [ ] Creates searchable index
+- [ ] Skill definition: `.claude/skills/dewey-archive.md`
+- [ ] Usage: `/dewey-archive [--age=90] [--unused]`
+- [ ] Identifies candidates:
+  - Files older than N days
+  - Files never cited in sessions
+  - Files with low access frequency
+- [ ] Skill reviews and confirms candidates
+- [ ] Moves to `archive/YYYY/` with searchable index
 - [ ] Preserves git history
 
-**Implementation**:
-```bash
-# scripts/archive-old-files.sh --age=90
-```
+---
 
-### Task 2.5: Extractive Summarizer
-**Spec**: spec-2-compaction.md
-**Dependencies**: Task 2.4
-**Estimate**: L
-
-**Acceptance Criteria**:
-- [ ] Module `src/core/compaction/extractive_summarizer.py`
-- [ ] TF-IDF based summarization (no LLM)
-- [ ] 90%+ information retention
-- [ ] Configurable compression ratio (5:1 to 10:1)
-- [ ] Validation with sample documents
-
-**Implementation**:
-```python
-from sklearn.feature_extraction.text import TfidfVectorizer
-
-def extractive_summarize(text: str, ratio: float = 0.2) -> str:
-    """Extract most important sentences using TF-IDF"""
-    pass
-```
-
-### Task 2.6: Session Manager
-**Spec**: spec-3-memory-tier.md
+### Task 2.4: `/dewey-session` Skill
+**Priority**: Medium
 **Dependencies**: Task 0.4
 **Estimate**: M
 
+**Description**: Manage session documentation and learnings
+
 **Acceptance Criteria**:
-- [ ] Module `src/core/memory/session_manager.py`
-- [ ] Automated session file creation
-- [ ] Week-based organization
-- [ ] Session metadata tracking
-- [ ] Integration with session hooks
+- [ ] Skill definition: `.claude/skills/dewey-session.md`
+- [ ] Usage:
+  - `/dewey-session start "Session Title"`
+  - `/dewey-session log "Learning or outcome"`
+  - `/dewey-session end`
+- [ ] Tracks files loaded in session
+- [ ] Records outcomes and learnings
+- [ ] Suggests promotions (session → long-term memory)
+- [ ] Integration with session template
 
 **Implementation**:
 ```python
 class SessionManager:
     def start_session(self, title: str): pass
-    def end_session(self): pass
     def log_learning(self, content: str): pass
-```
-
-### Task 2.7: Promotion Engine
-**Spec**: spec-3-memory-tier.md
-**Dependencies**: Task 2.6
-**Estimate**: L
-
-**Acceptance Criteria**:
-- [ ] Module `src/core/memory/promotion_engine.py`
-- [ ] Deterministic promotion rules:
-  - Age >7 days + referenced 3+ times → Promote
-  - Referenced 5+ times → Promote (any age)
-  - Score <0.3 → Discard
-  - Score 0.3-0.6 → Keep in mid-term
-- [ ] Weekly review workflow
-- [ ] Manual approval required
-- [ ] Tests for all promotion paths
-
-**Implementation**:
-```python
-def calculate_promotion_score(session_file: str) -> float:
-    """Calculate score based on age, references, validation"""
-    pass
-
-def suggest_promotions() -> List[PromotionCandidate]:
-    """Suggest files ready for promotion"""
-    pass
+    def end_session(self): pass
 ```
 
 ---
 
-## Phase 3: Automation & Multi-Provider (Month 3+)
-
-**Goal**: CI/CD loops, multi-provider support, slash commands
-
-### Task 3.1: Provider Base Interface
-**Spec**: spec-6-multi-provider.md
-**Dependencies**: None (parallel to Phase 2)
-**Estimate**: M
-
-**Acceptance Criteria**:
-- [ ] Module `src/providers/base.py`
-- [ ] Abstract base class with methods:
-  - `load_context()`
-  - `get_config()`
-  - `validate_structure()`
-  - `install_templates()`
-- [ ] Type hints for provider interface
-- [ ] Documentation for creating new adapters
-
-**Implementation**:
-```python
-from abc import ABC, abstractmethod
-
-class ProviderAdapter(ABC):
-    @abstractmethod
-    def load_context(self) -> List[str]: pass
-
-    @abstractmethod
-    def get_config(self) -> dict: pass
-
-    @abstractmethod
-    def validate_structure(self) -> ValidationResult: pass
-```
-
-### Task 3.2: Claude Code Adapter
-**Spec**: spec-6-multi-provider.md
-**Dependencies**: Task 3.1
-**Estimate**: M
-
-**Acceptance Criteria**:
-- [ ] Module `src/providers/claude.py`
-- [ ] Implements base adapter interface
-- [ ] Supports `.claude/` directory conventions
-- [ ] Parses `CLAUDE.md` configuration
-- [ ] Validates [[wikilinks]] format
-- [ ] Max file size: 500 lines
-
-**Implementation**:
-```python
-class ClaudeAdapter(ProviderAdapter):
-    config_path = ".claude/CLAUDE.md"
-    context_dir = "context/"
-    link_format = "wikilinks"
-```
-
-### Task 3.3: Codex Adapter
-**Spec**: spec-6-multi-provider.md
-**Dependencies**: Task 3.1
-**Estimate**: M
-
-**Acceptance Criteria**:
-- [ ] Module `src/providers/codex.py`
-- [ ] Supports `AGENTS.md` and `SKILL.md`
-- [ ] Context directory: `docs/` or `context/`
-- [ ] Markdown links format
-- [ ] Max file size: 1000 lines
-
-**Implementation**:
-```python
-class CodexAdapter(ProviderAdapter):
-    config_path = "AGENTS.md"
-    context_dir = ["docs/", "context/"]
-    link_format = "markdown"
-```
-
-### Task 3.4: Gemini Adapter
-**Spec**: spec-6-multi-provider.md
-**Dependencies**: Task 3.1
-**Estimate**: M
-
-**Acceptance Criteria**:
-- [ ] Module `src/providers/gemini.py`
-- [ ] Supports `.gemini/config.yaml`
-- [ ] Context directory: `.gemini/context/`
-- [ ] Both link formats supported
-- [ ] Max file size: 800 lines
-
-**Implementation**:
-```python
-class GeminiAdapter(ProviderAdapter):
-    config_path = ".gemini/config.yaml"
-    context_dir = ".gemini/context/"
-    link_format = "both"
-```
-
-### Task 3.5: Provider Auto-Detection
-**Spec**: spec-6-multi-provider.md
-**Dependencies**: Tasks 3.2, 3.3, 3.4
-**Estimate**: S
-
-**Acceptance Criteria**:
-- [ ] Function `detect_provider(repo_path)`
-- [ ] Checks for `.claude/`, `AGENTS.md`, `.gemini/`
-- [ ] Returns provider name or "unknown"
-- [ ] 95%+ accuracy on test repositories
-- [ ] Tests for all provider types
-
-**Implementation**:
-```python
-def detect_provider(repo_path: Path) -> str:
-    if (repo_path / ".claude").exists():
-        return "claude"
-    elif (repo_path / "AGENTS.md").exists():
-        return "codex"
-    elif (repo_path / ".gemini").exists():
-        return "gemini"
-    else:
-        return "unknown"
-```
-
-### Task 3.6: Slash Command Framework
-**Spec**: spec-7-slash-commands.md
-**Dependencies**: Task 3.5
+### Task 2.5: `/dewey-promote` Skill
+**Priority**: Medium
+**Dependencies**: Task 2.4
 **Estimate**: L
 
+**Description**: Promote session learnings to long-term memory
+
 **Acceptance Criteria**:
-- [ ] Module `src/cli/commands.py`
-- [ ] Click-based CLI framework
-- [ ] Commands: init, check, report, fix, status, analyze, session, pr, help
-- [ ] Unified interface across providers
-- [ ] Progress indicators for long operations
-- [ ] Markdown output
+- [ ] Skill definition: `.claude/skills/dewey-promote.md`
+- [ ] Usage: `/dewey-promote [session-file]`
+- [ ] Deterministic rules:
+  - Age >7 days + referenced 3+ times → promote
+  - Referenced 5+ times → promote (any age)
+  - Score <0.3 → discard
+- [ ] Skill (Claude) reviews and decides:
+  - Extract key insights
+  - Determine target location (main context vs reference)
+  - Rewrite for long-term clarity
+- [ ] Requires user approval before promotion
 
-**Implementation**:
-```python
-import click
+---
 
-@click.group()
-def dewey():
-    """Universal context optimization"""
-    pass
+## Phase 3: Automation & CI/CD (Weeks 7-10)
 
-@dewey.command()
-@click.option('--provider', default='auto')
-def init(provider):
-    """Initialize Dewey in repository"""
-    pass
-```
+**Goal**: Automated optimization loops and quality gates
+**Focus**: CI/CD integration, self-improvement, PR generation
 
-### Task 3.7: Extension Packaging - Claude Code
-**Spec**: spec-7-slash-commands.md
-**Dependencies**: Task 3.6
+### Task 3.1: `/dewey-optimize` Skill
+**Priority**: High
+**Dependencies**: Tasks 2.1-2.5
+**Estimate**: L
+
+**Description**: Run full optimization suite
+
+**Acceptance Criteria**:
+- [ ] Skill definition: `.claude/skills/dewey-optimize.md`
+- [ ] Usage: `/dewey-optimize [--auto-approve]`
+- [ ] Runs full analysis pipeline:
+  1. Identify large files → suggest splits
+  2. Find duplicates → suggest consolidation
+  3. Detect unused files → suggest archival
+  4. Check for dead links → suggest fixes
+  5. Review session learnings → suggest promotions
+- [ ] Generates optimization PR
+- [ ] User reviews before applying
+- [ ] Creates detailed changelog
+
+---
+
+### Task 3.2: KPI Evaluation Module
+**Priority**: High
+**Dependencies**: Task 1.1
 **Estimate**: M
 
-**Acceptance Criteria**:
-- [ ] Directory `src/extensions/claude/`
-- [ ] `manifest.yaml` with permissions
-- [ ] Entry point script
-- [ ] Installation via `claude code install dewey`
-- [ ] Commands registered automatically
-
-**Implementation**:
-```yaml
-# src/extensions/claude/manifest.yaml
-name: dewey
-version: 1.0.0
-commands:
-  - name: dewey
-    script: ./dewey.py
-```
-
-### Task 3.8: Extension Packaging - Codex
-**Spec**: spec-7-slash-commands.md
-**Dependencies**: Task 3.6
-**Estimate**: M
+**Description**: Evaluate context quality KPIs
 
 **Acceptance Criteria**:
-- [ ] Directory `src/extensions/codex/`
-- [ ] `extension.json` configuration
-- [ ] Installation via `codex extensions add dewey`
-
-### Task 3.9: Extension Packaging - Gemini
-**Spec**: spec-7-slash-commands.md
-**Dependencies**: Task 3.6
-**Estimate**: M
-
-**Acceptance Criteria**:
-- [ ] Directory `src/extensions/gemini/`
-- [ ] `plugin.yaml` configuration
-- [ ] Installation via `gemini plugins install dewey`
-
-### Task 3.10: KPI Evaluation Script
-**Spec**: spec-5-dual-cicd-loops.md
-**Dependencies**: Task 1.5
-**Estimate**: M
-
-**Acceptance Criteria**:
-- [ ] Module `src/cicd/kpi_checker.py`
+- [ ] Module: `src/core/analytics/kpi_checker.py`
 - [ ] Evaluates:
   - Context utilization (min 60%)
   - Token efficiency (min 70%)
   - File size max (500 lines)
   - Duplicate content (max 5%)
   - Dead links (0)
+  - Citation rate (min 40%)
 - [ ] Exit codes: 0 (pass), 1 (warn), 2 (fail)
 - [ ] JSON output for CI/CD parsing
+- [ ] Integration with `/dewey-check`
 
-**Implementation**:
-```python
-def check_kpis(repo_path: str) -> KPIResult:
-    """Evaluate context quality KPIs"""
-    pass
-```
+---
 
-### Task 3.11: Recommendation Engine
-**Spec**: spec-5-dual-cicd-loops.md
-**Dependencies**: Task 3.10
-**Estimate**: L
-
-**Acceptance Criteria**:
-- [ ] Module `src/cicd/recommendation_engine.py`
-- [ ] Categories:
-  - File splitting (>500 lines)
-  - Duplicate removal
-  - Archive old content (>90 days)
-  - Load optimization (high load, low citation)
-  - Missing context
-- [ ] Priority ranking (high/medium/low)
-- [ ] Impact estimates (token savings, effort)
-
-**Implementation**:
-```python
-def generate_recommendations(repo_path: str) -> List[Recommendation]:
-    """Analyze repo and suggest optimizations"""
-    pass
-```
-
-### Task 3.12: PR Generator - Loop 2 (Target Repo)
-**Spec**: spec-5-dual-cicd-loops.md
-**Dependencies**: Task 3.11
-**Estimate**: L
-
-**Acceptance Criteria**:
-- [ ] Module `src/reports/pr_generator.py`
-- [ ] Creates PR with:
-  - KPI summary
-  - Prioritized recommendations
-  - Specific changes (diffs)
-  - Expected impact
-  - Trend analysis
-- [ ] Uses GitHub API
-- [ ] Markdown formatting
-- [ ] Transparent (human reviews before merge)
-
-**Implementation**:
-```python
-def create_optimization_pr(repo_path: str) -> str:
-    """Generate PR with context optimization suggestions"""
-    # Analyze repo
-    # Generate recommendations
-    # Format as PR body
-    # Create PR via GitHub API
-    pass
-```
-
-### Task 3.13: Self-Improvement Detector - Loop 1 (Dewey)
-**Spec**: spec-5-dual-cicd-loops.md
-**Dependencies**: Task 3.11
-**Estimate**: L
-
-**Acceptance Criteria**:
-- [ ] Module `src/cicd/self_improvement.py`
-- [ ] Detects patterns in Dewey's own usage
-- [ ] Suggests improvements to Dewey itself
-- [ ] Creates PR on Dewey repository
-- [ ] Examples:
-  - Missing feature used by 15%+ of repos
-  - Bug pattern detected
-  - Performance optimization opportunity
-
-**Implementation**:
-```python
-def detect_self_improvement_opportunities() -> List[Improvement]:
-    """Analyze Dewey's usage patterns across repos"""
-    pass
-```
-
-### Task 3.14: CI/CD Workflow - Loop 1 (Dewey)
-**Spec**: spec-5-dual-cicd-loops.md
-**Dependencies**: Task 3.13
+### Task 3.3: GitHub Actions Workflow Template
+**Priority**: High
+**Dependencies**: Task 3.2
 **Estimate**: M
 
-**Acceptance Criteria**:
-- [ ] File `.github/workflows/dewey-ci.yml`
-- [ ] Runs on Dewey repository
-- [ ] Triggered weekly + on push
-- [ ] Evaluates Dewey's own quality
-- [ ] Creates PR with improvements
-- [ ] Tests must pass before PR creation
-
-**Implementation**:
-```yaml
-# .github/workflows/dewey-ci.yml
-name: Dewey Self-Improvement
-on:
-  schedule:
-    - cron: '0 0 * * 0'  # Weekly
-  push:
-    branches: [main]
-```
-
-### Task 3.15: CI/CD Workflow Template - Loop 2 (Target)
-**Spec**: spec-5-dual-cicd-loops.md
-**Dependencies**: Task 3.12
-**Estimate**: M
+**Description**: CI/CD workflow for context quality
 
 **Acceptance Criteria**:
-- [ ] File `templates/.github/workflows/dewey-checks.yml`
-- [ ] Installed to target repo via `dewey init`
-- [ ] Runs weekly
-- [ ] Checks quality gates
-- [ ] Creates PR with optimization suggestions
+- [ ] File: `templates/.github/workflows/dewey-quality.yml`
+- [ ] Triggers: weekly + on push to context files
+- [ ] Runs KPI checks
+- [ ] Invokes `/dewey-optimize` skill (if Claude Code API available)
+- [ ] Creates PR with recommendations
+- [ ] Human approval required before merge
 - [ ] Configurable via `.dewey/config.yml`
 
 **Implementation**:
 ```yaml
-# templates/.github/workflows/dewey-checks.yml
-name: Dewey Context Optimization
+name: Dewey Context Quality
 on:
   schedule:
     - cron: '0 0 * * 0'  # Weekly
-```
-
-### Task 3.16: Pre-Commit Hooks
-**Spec**: spec-5-dual-cicd-loops.md
-**Dependencies**: Task 3.10
-**Estimate**: S
-
-**Acceptance Criteria**:
-- [ ] Template `templates/hooks/pre-commit`
-- [ ] Validates:
-  - File size <500 lines
-  - No dead links
-  - No duplicates >5%
-- [ ] Fast (<2 seconds for 200 files)
-- [ ] Installed via `dewey init`
-
-**Implementation**:
-```bash
-#!/bin/bash
-# templates/hooks/pre-commit
-dewey check --fast || exit 1
+  push:
+    paths:
+      - 'context/**'
+      - '.claude/**'
 ```
 
 ---
 
-## Phase 4: Testing & Documentation (Ongoing)
+### Task 3.4: Self-Improvement Detection
+**Priority**: Medium
+**Dependencies**: Task 3.1
+**Estimate**: L
 
-**Goal**: Comprehensive tests and documentation
-
-### Task 4.1: Unit Tests - Measurement
-**Dependencies**: Tasks 1.1-1.3
-**Estimate**: M
-
-**Acceptance Criteria**:
-- [ ] Tests in `tests/test_measurement.py`
-- [ ] Coverage >80% for measurement modules
-- [ ] Edge cases tested
-- [ ] Mock file system for isolation
-
-### Task 4.2: Unit Tests - Compaction
-**Dependencies**: Tasks 2.1-2.5
-**Estimate**: M
+**Description**: Dewey analyzes its own usage patterns
 
 **Acceptance Criteria**:
-- [ ] Tests in `tests/test_compaction.py`
-- [ ] Coverage >80% for compaction modules
-- [ ] Test file splitting, deduplication, summarization
+- [ ] Module: `src/core/analytics/self_improvement.py`
+- [ ] Analyzes patterns across repositories using Dewey
+- [ ] Detects:
+  - Common feature requests (15%+ of repos)
+  - Bug patterns
+  - Performance issues
+  - UX friction points
+- [ ] Creates PR on Dewey repository with improvements
+- [ ] Examples:
+  - "50% of users need custom thresholds → add config"
+  - "Split skill timing out on 2000+ line files → optimize"
 
-### Task 4.3: Unit Tests - Memory Tier
-**Dependencies**: Tasks 2.6-2.7
+---
+
+### Task 3.5: `/dewey-doctor` Skill
+**Priority**: Medium
+**Dependencies**: Tasks 3.1, 3.2
 **Estimate**: M
 
-**Acceptance Criteria**:
-- [ ] Tests in `tests/test_memory.py`
-- [ ] Coverage >80% for memory modules
-- [ ] Test promotion rules and session management
+**Description**: Diagnose context health issues
 
-### Task 4.4: Unit Tests - CI/CD
-**Dependencies**: Tasks 3.10-3.16
+**Acceptance Criteria**:
+- [ ] Skill definition: `.claude/skills/dewey-doctor.md`
+- [ ] Usage: `/dewey-doctor`
+- [ ] Comprehensive health check:
+  - KPI evaluation
+  - Performance analysis
+  - Best practices compliance
+  - Common anti-patterns
+- [ ] Prescribes fixes with priority
+- [ ] Interactive: can auto-apply fixes
+- [ ] Explains reasoning for each recommendation
+
+---
+
+## Phase 4: Advanced Features (Weeks 11-14)
+
+**Goal**: Polish, performance, and advanced capabilities
+**Focus**: Citation tracking, summarization, quality scoring
+
+### Task 4.1: Citation Tracker Module
+**Priority**: Medium
+**Dependencies**: Task 1.4
+**Estimate**: L
+
+**Description**: Track which files are actually used in responses
+
+**Acceptance Criteria**:
+- [ ] Module: `src/core/measurement/citation_tracker.py`
+- [ ] Grep-based phrase matching
+- [ ] Tracks which loaded files appear in Claude's responses
+- [ ] CSV output: file, citation_count, utilization_rate
+- [ ] Integration with frequency tracker
+- [ ] Identifies "dead weight" files (loaded but never cited)
+
+---
+
+### Task 4.2: Extractive Summarizer
+**Priority**: Low
+**Dependencies**: Task 2.1
+**Estimate**: L
+
+**Description**: Create compact summaries of reference files
+
+**Acceptance Criteria**:
+- [ ] Module: `src/core/compaction/summarizer.py`
+- [ ] TF-IDF based summarization (no LLM needed)
+- [ ] 90%+ information retention
+- [ ] Configurable compression ratio (5:1 to 10:1)
+- [ ] Validation with sample documents
+- [ ] Option to use skill (Claude) for better summaries
+
+---
+
+### Task 4.3: `/dewey-compress` Skill
+**Priority**: Low
+**Dependencies**: Task 4.2
+**Estimate**: M
+
+**Description**: Compress verbose files
+
+**Acceptance Criteria**:
+- [ ] Skill definition: `.claude/skills/dewey-compress.md`
+- [ ] Usage: `/dewey-compress file.md [--ratio=0.5]`
+- [ ] Uses Claude to intelligently compress
+- [ ] Maintains key information
+- [ ] Better than extractive summarization
+- [ ] Creates side-by-side comparison
+
+---
+
+### Task 4.4: Quality Scoring System
+**Priority**: Low
+**Dependencies**: Tasks 3.2, 4.1
+**Estimate**: M
+
+**Description**: Score context files by quality/usefulness
+
+**Acceptance Criteria**:
+- [ ] Module: `src/core/analytics/quality_scorer.py`
+- [ ] Scores based on:
+  - Citation frequency
+  - Token efficiency
+  - Recency of updates
+  - Structural quality
+  - Best practices compliance
+- [ ] Grade: A-F per file
+- [ ] Recommendations for low-scoring files
+- [ ] Integration with `/dewey-report`
+
+---
+
+## Phase 5: Testing & Documentation (Ongoing)
+
+**Goal**: Comprehensive tests and user documentation
+**Focus**: Test coverage, examples, guides
+
+### Task 5.1: Skill Integration Tests
+**Priority**: High
+**Dependencies**: Phase 1-2 tasks
 **Estimate**: L
 
 **Acceptance Criteria**:
-- [ ] Tests in `tests/test_cicd_loops.py`
-- [ ] Test both loops independently
-- [ ] Mock GitHub API calls
-- [ ] Test PR generation
-
-### Task 4.5: Integration Tests - Providers
-**Dependencies**: Tasks 3.2-3.5
-**Estimate**: L
-
-**Acceptance Criteria**:
-- [ ] Tests in `tests/test_providers/`
-- [ ] Test each provider adapter
-- [ ] Test auto-detection
-- [ ] Test with sample repositories
-
-### Task 4.6: Integration Tests - Slash Commands
-**Dependencies**: Task 3.6
-**Estimate**: M
-
-**Acceptance Criteria**:
-- [ ] Tests in `tests/test_commands/`
-- [ ] Test all commands: init, check, report, fix, status
+- [ ] Tests in `tests/skills/`
+- [ ] Test each skill end-to-end
+- [ ] Mock Claude Code skill system
 - [ ] Test error handling
-- [ ] Test help system
+- [ ] Test edge cases
+- [ ] Coverage >80% for skill helpers
 
-### Task 4.7: End-to-End Workflow Test
-**Dependencies**: All previous tasks
-**Estimate**: L
+---
 
-**Acceptance Criteria**:
-- [ ] Script `tests/integration/test_workflow.sh`
-- [ ] Tests complete workflow:
-  1. `dewey init`
-  2. Run baseline measurements
-  3. Apply optimizations
-  4. Generate dashboard
-  5. Create PR
-- [ ] Works on sample repository
-- [ ] Validates all outputs
-
-### Task 4.8: Documentation - User Guide
-**Dependencies**: Task 3.6
+### Task 5.2: User Guide
+**Priority**: High
+**Dependencies**: Phase 1-2
 **Estimate**: M
 
 **Acceptance Criteria**:
-- [ ] `docs/USER_GUIDE.md` created
-- [ ] Installation instructions for all providers
-- [ ] Command reference
-- [ ] Configuration guide
-- [ ] Troubleshooting section
+- [ ] File: `docs/USER_GUIDE.md`
+- [ ] Installation instructions
+- [ ] Skill reference (all `/dewey-*` commands)
+- [ ] Examples and workflows
+- [ ] Troubleshooting guide
+- [ ] Best practices
 
-### Task 4.9: Documentation - Architecture
-**Dependencies**: All implementation tasks
-**Estimate**: M
+---
 
-**Acceptance Criteria**:
-- [ ] `docs/ARCHITECTURE.md` created
-- [ ] System overview diagram
-- [ ] Component descriptions
-- [ ] Provider adapter pattern explained
-- [ ] CI/CD loop details
-
-### Task 4.10: Documentation - Provider Differences
-**Dependencies**: Tasks 3.2-3.4
+### Task 5.3: Skill Examples Repository
+**Priority**: Medium
+**Dependencies**: Phase 1-2
 **Estimate**: S
 
 **Acceptance Criteria**:
-- [ ] `docs/PROVIDERS.md` created
-- [ ] Comparison table
-- [ ] Provider-specific guidance
-- [ ] Migration guide between providers
+- [ ] Directory: `examples/`
+- [ ] Sample context repository
+- [ ] Before/after examples
+- [ ] Video demonstrations (optional)
+- [ ] Common workflows documented
+
+---
+
+## Phase 6: Multi-Provider Expansion (Future)
+
+**Goal**: Extend to Codex, Gemini, and other providers
+**Status**: Deferred until Claude Code implementation proven
+
+This phase will leverage learnings from Claude Code to create provider adapters for:
+- OpenAI Codex
+- Google Gemini
+- Other LLM CLI tools
+
+**Approach**: Extract common patterns, create provider abstraction layer, implement adapters.
+
+---
+
+## Skills Summary
+
+### Phase 1 (Core)
+- `/dewey-analyze` - Analyze context usage
+- `/dewey-report` - Generate dashboard
+- `/dewey-check` - Quality checks
+
+### Phase 2 (Optimization)
+- `/dewey-split` - Split large files ✅
+- `/dewey-dedupe` - Remove duplicates
+- `/dewey-archive` - Archive old files
+- `/dewey-session` - Manage sessions
+- `/dewey-promote` - Promote learnings
+
+### Phase 3 (Automation)
+- `/dewey-optimize` - Full optimization suite
+- `/dewey-doctor` - Health diagnosis
+
+### Phase 4 (Advanced)
+- `/dewey-compress` - Compress verbose files
 
 ---
 
 ## Success Criteria
 
-### Phase 0 Complete
-- [ ] Token inventory script working
-- [ ] Session template created
-- [ ] Baseline measurements taken
-- [ ] One file split successfully
+### Phase 0 Complete ✅
+- [x] Token inventory working
+- [x] Session template created
+- [x] Baseline measurements taken
+- [x] File splitting with skill-based design
 
 ### Phase 1 Complete
-- [ ] CSV logging captures >90% of sessions
-- [ ] Weekly dashboard generates automatically
-- [ ] Citation tracking working
-- [ ] All measurement tests passing
+- [ ] All core skills functional
+- [ ] Measurement tracking automated
+- [ ] Weekly reports generating
+- [ ] Quality checks integrated
 
 ### Phase 2 Complete
-- [ ] File splitter handles >500 line files
-- [ ] Duplicate detector finds duplicates
-- [ ] Session manager tracks learnings
-- [ ] Promotion engine suggests candidates
-- [ ] All compaction tests passing
+- [ ] All optimization skills working
+- [ ] Session management operational
+- [ ] Promotion engine suggesting candidates
+- [ ] >80% test coverage
 
 ### Phase 3 Complete
-- [ ] All 3 provider adapters working
-- [ ] Auto-detection 95%+ accurate
-- [ ] All slash commands functional
-- [ ] Extensions installable in all providers
-- [ ] Loop 1: Dewey self-improvement working
-- [ ] Loop 2: Target repo optimization working
-- [ ] Both loops generate PRs (not auto-commits)
-- [ ] Pre-commit hooks prevent regressions
-- [ ] All CI/CD tests passing
+- [ ] CI/CD workflow templates ready
+- [ ] Automated optimization PRs generating
+- [ ] Self-improvement detecting patterns
+- [ ] Quality gates preventing regressions
 
-### Phase 4 Complete
-- [ ] Test coverage >80%
-- [ ] All integration tests passing
-- [ ] Documentation complete
-- [ ] Ready for production use
+### Ready for Multi-Provider Expansion
+- [ ] Claude Code plugin proven valuable
+- [ ] User adoption validated
+- [ ] Architecture patterns documented
+- [ ] Provider abstraction layer designed
 
 ---
 
 ## Completion Promise
 
-When all phases complete and tests pass, output:
+When Phase 1-3 complete and Claude Code plugin validated, output:
 
 ```
-<promise>DEWEY UNIVERSAL CONTEXT OPTIMIZER COMPLETE</promise>
+<promise>DEWEY CLAUDE CODE PLUGIN COMPLETE</promise>
 ```
 
 **Final Verification**:
-- [ ] All 43 tasks completed
+- [ ] All core skills functional
 - [ ] Test coverage >80%
-- [ ] Type checks pass (mypy)
-- [ ] Lint checks pass (ruff)
-- [ ] Integration tests pass for all 3 providers
-- [ ] Weekly dashboard generates successfully
-- [ ] Dual CI/CD loops operational
-- [ ] Transparent PRs generated (not auto-commits)
-- [ ] Multi-provider support validated
-- [ ] Documentation complete
-- [ ] Installation tested in all providers
+- [ ] User guide complete
+- [ ] CI/CD templates working
+- [ ] Real-world usage validated
+- [ ] Ready for multi-provider expansion
 
 ---
 
 ## Task Summary by Phase
 
-- **Phase 0**: 6 tasks (S:4, M:2)
-- **Phase 1**: 5 tasks (M:4, L:1)
-- **Phase 2**: 7 tasks (S:0, M:3, L:4)
-- **Phase 3**: 16 tasks (S:2, M:9, L:5)
-- **Phase 4**: 10 tasks (S:1, M:5, L:4)
+- **Phase 0**: 6 tasks ✅ **COMPLETE**
+- **Phase 1**: 5 tasks (Core Skills)
+- **Phase 2**: 5 tasks (Optimization Skills)
+- **Phase 3**: 5 tasks (Automation & CI/CD)
+- **Phase 4**: 4 tasks (Advanced Features)
+- **Phase 5**: 3 tasks (Testing & Documentation)
+- **Phase 6**: Deferred (Multi-Provider)
 
-**Total**: 44 tasks
-**Estimated Effort**: ~8-12 weeks
+**Total**: 28 active tasks (vs 44 in original plan)
+**Estimated Effort**: ~6-8 weeks (vs 8-12 weeks)
+
+---
+
+## Key Changes from v1.0
+
+### Removed/Deferred
+- ❌ Multi-provider support (Codex, Gemini) - Phase 6
+- ❌ Separate CLI tools - Replaced with skills
+- ❌ API key management - Uses session
+- ❌ Provider auto-detection - Single provider
+- ❌ Extension packaging - Claude Code only
+
+### Added/Enhanced
+- ✅ Skill-based design pattern throughout
+- ✅ `/dewey-*` command namespace
+- ✅ Session-based LLM integration
+- ✅ Simplified architecture
+- ✅ Faster time to value
+
+### Philosophy Shift
+- **From**: Universal multi-provider tool
+- **To**: Excellent Claude Code plugin first, expand later
+- **Benefit**: Faster development, better focus, validated approach
 
 ---
 
 ## Notes
 
-- Tasks can be parallelized within phases (use subagents)
-- Each task should be completed fully before moving to next
-- Tests are mandatory for all core functionality
-- Documentation should be updated as features are built
-- Follow "Start Small" philosophy - measure before optimizing
-- Transparency is key - generate PRs for review, not auto-commits
+- All skills use Claude Code session (no API keys)
+- Python helpers support file operations
+- Skills provide intelligence and analysis
+- Focus on user experience and simplicity
+- Multi-provider expansion after validation
+- Continuous testing and documentation
+
+---
+
+**Current Status**: Phase 0 complete, starting Phase 1
+**Next Task**: Task 1.1 - `/dewey-analyze` skill
+**Updated**: 2026-02-10

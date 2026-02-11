@@ -1,0 +1,21 @@
+{
+  "name": "dewey",
+  "description": "Context optimization plugin for Claude Code - intelligently manage, analyze, and optimize your context files",
+  "version": "0.0.1",
+  "author": {
+    "name": "Dewey Contributors"
+  },
+  "homepage": "https://github.com/yourusername/dewey",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/dewey.git"
+  },
+  "keywords": [
+    "context",
+    "optimization",
+    "analysis",
+    "token-management",
+    "file-splitting"
+  ],
+  "license": "MIT"
+}
