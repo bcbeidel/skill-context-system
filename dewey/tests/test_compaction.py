@@ -1,12 +1,16 @@
 """Tests for compaction modules (file splitting, deduplication)."""
 
 import shutil
+import sys
 import tempfile
 from pathlib import Path
 
 import pytest
 
-from dewey.core.compaction.file_splitter import (
+# Add skills/split/scripts to path
+sys.path.insert(0, str(Path(__file__).parent.parent.parent / "skills" / "split" / "scripts"))
+
+from file_splitter import (
     create_backup,
     generate_split_report,
     parse_wikilinks,

@@ -1,11 +1,15 @@
+#!/usr/bin/env python3
 """Skill helper for /dewey-analyze - context analysis and recommendations."""
 
+import argparse
 import json
-from dataclasses import dataclass
+import sys
+from dataclasses import dataclass, asdict
 from pathlib import Path
 from typing import Optional
 
-from dewey.core.measurement.token_counter import scan_directory
+# Import from local module
+from token_counter import scan_directory
 
 
 @dataclass
@@ -337,3 +341,90 @@ def compare_to_baseline(
         "baseline_date": baseline["timestamp"],
         "improved": current.total_tokens < baseline["total_tokens"],
     }
+
+
+def main():
+    """CLI entry point for analyze_directory."""
+    parser = argparse.ArgumentParser(
+        description="Analyze directory context usage and generate optimization recommendations"
+    )
+    parser.add_argument(
+        "directory",
+        type=Path,
+        nargs="?",
+        default=Path.cwd(),
+        help="Directory to analyze (default: current directory)",
+    )
+    parser.add_argument(
+        "--json",
+        action="store_true",
+        help="Output results in JSON format",
+    )
+    parser.add_argument(
+        "--detailed",
+        action="store_true",
+        help="Include detailed file-by-file breakdown",
+    )
+    parser.add_argument(
+        "--baseline",
+        action="store_true",
+        help="Save analysis as baseline for future comparison",
+    )
+    parser.add_argument(
+        "--threshold",
+        type=int,
+        default=500,
+        help="Custom 'large file' threshold in lines (default: 500)",
+    )
+
+    args = parser.parse_args()
+
+    # Validate directory
+    if not args.directory.exists():
+        print(f"Error: Directory not found: {args.directory}", file=sys.stderr)
+        sys.exit(1)
+
+    if not args.directory.is_dir():
+        print(f"Error: Not a directory: {args.directory}", file=sys.stderr)
+        sys.exit(1)
+
+    # Analyze directory
+    data = analyze_directory(
+        args.directory,
+        large_file_threshold=args.threshold,
+    )
+
+    if args.json:
+        # Output JSON for Claude to parse
+        # Convert dataclasses to dict
+        def dataclass_to_dict(obj):
+            if hasattr(obj, "__dataclass_fields__"):
+                result = {}
+                for field_name, field_def in obj.__dataclass_fields__.items():
+                    value = getattr(obj, field_name)
+                    if isinstance(value, Path):
+                        result[field_name] = str(value)
+                    elif isinstance(value, list):
+                        result[field_name] = [dataclass_to_dict(item) for item in value]
+                    elif hasattr(value, "__dataclass_fields__"):
+                        result[field_name] = dataclass_to_dict(value)
+                    else:
+                        result[field_name] = value
+                return result
+            return obj
+
+        output = dataclass_to_dict(data)
+        print(json.dumps(output, indent=2))
+    else:
+        # Generate prompt for Claude
+        prompt = generate_analysis_prompt(data, detailed=args.detailed)
+        print(prompt)
+
+    # Save baseline if requested
+    if args.baseline:
+        baseline_path = save_baseline(data)
+        print(f"\n✓ Baseline saved to: {baseline_path}", file=sys.stderr)
+
+
+if __name__ == "__main__":
+    main()

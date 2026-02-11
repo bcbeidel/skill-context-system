@@ -1,5 +1,6 @@
 ---
 description: Intelligently split large files using LLM analysis to maintain semantic coherence
+allowed-tools: Bash(python *)
 ---
 
 # Split Large Files
@@ -66,29 +67,42 @@ Backup: .dewey/backups/IMPLEMENTATION_PLAN_20260210.md
 Use the Python helper functions to implement this command:
 
 ```python
+import sys
 from pathlib import Path
-from dewey.core.compaction.skill_splitter import (
-    analyze_directory,
-    generate_refactor_prompt,
-    implement_refactor_plan
-)
+
+# Add scripts directory to path
+scripts_dir = Path("${CLAUDE_PLUGIN_ROOT}/skills/split/scripts")
+sys.path.insert(0, str(scripts_dir))
+
+from skill_splitter import skill_based_split, implement_refactor_plan
 
 # Parse arguments
-file_path = Path("$ARGUMENTS".split()[0])
+args = "$ARGUMENTS".split()
+file_path = Path(args[0]) if args else None
 dry_run = "--dry-run" in "$ARGUMENTS"
 
-# Generate analysis prompt
-request, prompt = skill_based_split(file_path, dry_run=dry_run)
+if not file_path:
+    print("Error: Please provide a file path")
+    sys.exit(1)
 
-# Display the prompt and ask Claude (me!) to analyze
-# Claude will provide refactoring plan in JSON format
-# Then implement the plan:
-# result = implement_refactor_plan(file_path, plan)
+# Generate analysis prompt
+request, prompt = skill_based_split(
+    file_path,
+    max_lines=500,
+    target_main_lines=150,
+    dry_run=dry_run
+)
+
+# Display file info
+print(f"File: {request.file_path}")
+print(f"Current lines: {request.total_lines}")
+print(f"Target main lines: {request.target_main_lines}")
+print(f"\n{prompt}")
 ```
 
 ## Analysis Task
 
-When invoked, analyze the file content and provide a refactoring plan in this JSON format:
+When invoked, I (Claude) will analyze the file content and provide a refactoring plan in JSON format:
 
 ```json
 {
@@ -104,6 +118,8 @@ When invoked, analyze the file content and provide a refactoring plan in this JS
 }
 ```
 
+After providing the plan, I will use `implement_refactor_plan()` to write the files unless `--dry-run` is specified.
+
 ## Best Practices Applied
 
 - **Scannable main files**: Overview + key concepts + navigation
@@ -116,8 +132,7 @@ When invoked, analyze the file content and provide a refactoring plan in this JS
 
 Works seamlessly with:
 - `/dewey:analyze` - Identifies files that need splitting
-- `/dewey:check` - Validates file sizes after splitting
-- `/dewey:optimize` - Part of full optimization suite
+- Other optimization commands (to be implemented)
 
 ---
 

@@ -1,9 +1,10 @@
-# Dewey Context Optimizer - Implementation Plan v2.0
+# Dewey Context Optimizer - Implementation Plan v2.1
 
 **Created**: 2026-02-10
-**Updated**: 2026-02-10
+**Updated**: 2026-02-10 (Refactored to stdlib-only)
 **Status**: Active Development
-**Current Phase**: Phase 0 (Foundation) → Phase 1 (Core Skills)
+**Version**: 0.0.2
+**Current Phase**: Phase 0 Complete + Refactored → Phase 1 (Core Skills)
 
 ---
 
@@ -24,6 +25,64 @@ Dewey is a **Claude Code plugin** that optimizes context management through inte
 - Quick wins first
 - Data-driven decisions
 - Transparent recommendations (PRs, not auto-commits)
+
+---
+
+## Refactoring to Stdlib-Only (Feb 2026)
+
+**Key Decision**: Removed all external dependencies and restructured to follow Claude Code best practices.
+
+### Motivation
+
+Initial exploration revealed that:
+1. **No external dependencies needed**: Core Python modules (token_counter, file_splitter) only used stdlib
+2. **Click dependency unnecessary**: Only used in CLI scripts, easily replaced with argparse
+3. **Package installation friction**: Users had to run pip install, creating setup complexity
+4. **Structure misalignment**: Commands in `commands/` instead of `skills/*/SKILL.md` format
+
+### Changes Made
+
+**Removed Dependencies** (v0.0.2):
+- ❌ pandas (never actually used)
+- ❌ pyyaml (never actually used)
+- ❌ click (replaced with argparse)
+- ❌ requests (never actually used)
+- ❌ gitpython (never actually used)
+- ❌ anthropic (uses Claude Code session instead)
+
+**Restructured to Skills Format**:
+```
+Before:                          After:
+commands/analyze.md       →     skills/analyze/SKILL.md
+commands/split.md         →     skills/split/SKILL.md
+src/dewey/core/...        →     skills/*/scripts/...
+```
+
+**Benefits**:
+- ✅ Zero installation complexity (no pip install needed)
+- ✅ Faster loading (no external imports)
+- ✅ Follows official Claude Code plugin patterns
+- ✅ Portable across all Python 3.9+ environments
+- ✅ No dependency version conflicts
+- ✅ Simpler maintenance
+
+### Lessons Learned
+
+1. **Start simple**: External dependencies weren't needed for core functionality
+2. **Follow platform patterns**: Claude Code has well-defined best practices
+3. **Question assumptions**: "We'll need pandas/requests" was never validated
+4. **Stdlib is powerful**: Python 3.9+ has everything needed for file analysis
+
+### Implementation Status
+
+- ✅ Removed unimplemented command skeletons (report, check, optimize)
+- ✅ Converted CLI scripts from Click to argparse
+- ✅ Created skills/analyze/ and skills/split/ structure
+- ✅ Updated all tests to use new import paths
+- ✅ All 44 tests passing
+- ✅ Zero runtime dependencies
+
+Focus now on implemented features (analyze, split) before adding new capabilities.
 
 ---
 
@@ -83,21 +142,25 @@ dewey/
 
 ---
 
-## Phase 0: Foundation ✅ COMPLETE
+## Phase 0: Foundation ✅ COMPLETE + REFACTORED
 
 **Goal**: Establish baseline and infrastructure
-**Status**: Complete (5/5 tasks done, 1 enhanced)
+**Status**: Complete and refactored to stdlib-only
 
 ### Completed Tasks
 
 - ✅ **Task 0.1**: Project Structure Setup
-- ✅ **Task 0.2**: Core Dependencies Setup
+- ✅ **Task 0.2**: Core Dependencies Setup (removed in refactoring)
 - ✅ **Task 0.3**: Token Inventory Script
 - ✅ **Task 0.4**: Session Tracking Template
 - ✅ **Task 0.5**: Baseline Measurement Report
 - ✅ **Task 0.6**: Intelligent File Splitting (skill-based!)
+- ✅ **Refactoring**: Converted to stdlib-only, skills-based structure
 
-**Key Achievement**: Established skill-based design pattern
+**Key Achievements**:
+- Established skill-based design pattern
+- Zero external dependencies
+- Follows Claude Code best practices
 
 ---
 

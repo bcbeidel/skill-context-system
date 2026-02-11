@@ -1,11 +1,15 @@
 """Tests for token counting and measurement utilities."""
 
+import sys
 import tempfile
 from pathlib import Path
 
 import pytest
 
-from dewey.core.measurement.token_counter import (
+# Add skills/analyze/scripts to path
+sys.path.insert(0, str(Path(__file__).parent.parent.parent / "skills" / "analyze" / "scripts"))
+
+from token_counter import (
     count_file_tokens,
     estimate_tokens,
     format_summary,

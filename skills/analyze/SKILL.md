@@ -1,5 +1,6 @@
 ---
 description: Analyze context usage and generate actionable optimization recommendations
+allowed-tools: Bash(python *)
 ---
 
 # Analyze Context
@@ -34,28 +35,22 @@ Perform comprehensive analysis of context files to identify optimization opportu
 
 ## Implementation Steps
 
-### 1. Scan Directory
+### 1. Run Analysis Script
 
-Use Python helper to collect data:
+Execute the Python analysis script:
 
-```python
-from pathlib import Path
-from dewey.skills.analyze_skill import analyze_directory, generate_analysis_prompt
-
-# Parse arguments
-args = "$ARGUMENTS".split()
-directory = Path(args[0]) if args else Path.cwd()
-detailed = "--detailed" in "$ARGUMENTS"
-baseline = "--baseline" in "$ARGUMENTS"
-
-# Scan and analyze
-data = analyze_directory(directory)
-
-# Generate prompt for Claude
-prompt = generate_analysis_prompt(data, detailed=detailed)
+```bash
+python ${CLAUDE_PLUGIN_ROOT}/skills/analyze/scripts/analyze_directory.py $ARGUMENTS
 ```
 
-### 2. Analyze Data
+The script will:
+- Scan the directory for matching files (default: .md files)
+- Count tokens, lines, and bytes for each file
+- Categorize files by size
+- Identify large files (>500 lines by default)
+- Generate a structured analysis prompt
+
+### 2. Analyze the Output
 
 As Claude, you will receive structured data about:
 - Total files, tokens, lines, bytes
@@ -70,11 +65,11 @@ Provide a comprehensive analysis report with:
 #### Issues Detection (Prioritized)
 - 🔴 **High Priority**: Immediate action needed
   - Large files (>500 lines) → `/dewey:split file.md`
-  - Dead links → `/dewey:check --fix-links`
-  - Critical duplicates → `/dewey:dedupe`
+  - Dead links → Manual fixes needed
+  - Critical duplicates
 
 - 🟡 **Medium Priority**: Should address soon
-  - Unused files → `/dewey:archive --unused`
+  - Unused files
   - Inefficient organization
   - Verbose documentation
 
@@ -128,26 +123,22 @@ Largest File:       9,375 tokens (IMPLEMENTATION_PLAN.md)
 ⚠️  Issues Detected
 ==================================================
 
-🔴 High Priority (3 issues)
+🔴 High Priority (2 issues)
   1. Large files detected (2 files >500 lines)
      → /dewey:split IMPLEMENTATION_PLAN.md
      → /dewey:split .seed-prompt.md
      Impact: ~15,000 tokens saved
 
   2. Duplicate content found (~15% duplication)
-     → /dewey:dedupe context/
+     → Manual review recommended
      Impact: ~18,000 tokens saved
-
-  3. Dead links detected (5 broken wikilinks)
-     → /dewey:check --fix-links
-     Impact: Improved navigation
 
 💡 Recommendations
 ==================================================
 
 Quick Wins:
   1. Split IMPLEMENTATION_PLAN.md (5 min, 7,500 tokens)
-  2. Fix dead links (2 min)
+  2. Review duplicate files (10 min)
 
 📈 Potential Impact
 ==================================================
@@ -159,27 +150,18 @@ Savings:    38,000 tokens (30% reduction)
 ==================================================
 1. /dewey:split IMPLEMENTATION_PLAN.md
 2. /dewey:split .seed-prompt.md
-3. /dewey:dedupe context/
+3. Review duplicate files manually
 ```
 
 ## Save Results
 
-If `--baseline` flag is present:
-
-```python
-from dewey.skills.analyze_skill import save_baseline
-
-baseline_path = save_baseline(data)
-print(f"\n✓ Baseline saved to: {baseline_path}")
-```
+If `--baseline` flag is present, the script automatically saves baseline data to `~/.claude/analytics/baseline.json`.
 
 ## Integration
 
 Works with:
 - `/dewey:split` - Acts on identified large files
-- `/dewey:report` - Uses data for trend analysis
-- `/dewey:optimize` - Comprehensive optimization
-- `/dewey:check` - Quality validation
+- Other optimization commands (to be implemented)
 
 ---
 

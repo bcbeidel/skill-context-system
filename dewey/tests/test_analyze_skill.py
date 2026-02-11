@@ -2,12 +2,16 @@
 
 import json
 import shutil
+import sys
 import tempfile
 from pathlib import Path
 
 import pytest
 
-from dewey.skills.analyze_skill import (
+# Add skills/analyze/scripts to path
+sys.path.insert(0, str(Path(__file__).parent.parent.parent / "skills" / "analyze" / "scripts"))
+
+from analyze_directory import (
     AnalysisData,
     analyze_directory,
     compare_to_baseline,

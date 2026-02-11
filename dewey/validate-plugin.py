@@ -39,45 +39,56 @@ def validate_plugin():
     else:
         errors.append("✗ Missing .claude-plugin/plugin.json")
 
-    # Check commands directory
-    commands_dir = Path("commands")
-    if commands_dir.exists():
-        command_files = list(commands_dir.glob("*.md"))
-        if command_files:
-            success.append(f"✓ Found {len(command_files)} command files")
-            for cmd in command_files:
-                # Check for frontmatter
-                content = cmd.read_text()
-                if content.startswith("---"):
-                    success.append(f"  ✓ {cmd.name} has frontmatter")
+    # Check skills directory (new structure)
+    skills_dir = Path("../skills")
+    if skills_dir.exists():
+        skill_dirs = [d for d in skills_dir.iterdir() if d.is_dir() and not d.name.startswith('.')]
+        if skill_dirs:
+            success.append(f"✓ Found {len(skill_dirs)} skill directories")
+            for skill in skill_dirs:
+                # Check for SKILL.md
+                skill_md = skill / "SKILL.md"
+                if skill_md.exists():
+                    content = skill_md.read_text()
+                    if content.startswith("---"):
+                        success.append(f"  ✓ {skill.name}/SKILL.md has frontmatter")
+                    else:
+                        warnings.append(f"  ⚠ {skill.name}/SKILL.md missing frontmatter")
                 else:
-                    warnings.append(f"  ⚠ {cmd.name} missing frontmatter")
+                    errors.append(f"  ✗ Missing {skill.name}/SKILL.md")
+
+                # Check for scripts directory
+                scripts_dir = skill / "scripts"
+                if scripts_dir.exists():
+                    py_files = list(scripts_dir.glob("*.py"))
+                    if py_files:
+                        success.append(f"  ✓ {skill.name}/scripts has {len(py_files)} Python modules")
+                    else:
+                        warnings.append(f"  ⚠ {skill.name}/scripts has no Python files")
+                else:
+                    warnings.append(f"  ⚠ {skill.name} missing scripts/ directory")
         else:
-            errors.append("✗ No command files in commands/")
+            errors.append("✗ No skill directories found in ../skills/")
     else:
-        errors.append("✗ Missing commands/ directory")
+        errors.append("✗ Missing ../skills/ directory")
 
-    # Check Python source
-    src_dir = Path("src/dewey")
-    if src_dir.exists():
-        py_files = list(src_dir.rglob("*.py"))
-        py_files = [f for f in py_files if "__pycache__" not in str(f)]
-        success.append(f"✓ Found {len(py_files)} Python modules")
+    # Check key Python modules in new structure
+    key_modules = [
+        "../skills/analyze/scripts/token_counter.py",
+        "../skills/analyze/scripts/analyze_directory.py",
+        "../skills/split/scripts/file_splitter.py",
+        "../skills/split/scripts/skill_splitter.py",
+    ]
+    module_check_passed = True
+    for module in key_modules:
+        if Path(module).exists():
+            success.append(f"  ✓ {module}")
+        else:
+            errors.append(f"  ✗ Missing {module}")
+            module_check_passed = False
 
-        # Check key modules
-        key_modules = [
-            "src/dewey/core/measurement/token_counter.py",
-            "src/dewey/core/compaction/file_splitter.py",
-            "src/dewey/core/compaction/skill_splitter.py",
-            "src/dewey/skills/analyze_skill.py",
-        ]
-        for module in key_modules:
-            if Path(module).exists():
-                success.append(f"  ✓ {module}")
-            else:
-                errors.append(f"  ✗ Missing {module}")
-    else:
-        errors.append("✗ Missing src/dewey/ directory")
+    if module_check_passed:
+        success.append("✓ All key modules present")
 
     # Check tests
     tests_dir = Path("tests")

@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """Skill-based intelligent file splitting.
 
 This module provides file splitting that uses Claude Code's native skill system,
@@ -10,7 +11,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
 
-from dewey.core.compaction.file_splitter import SplitResult, create_backup
+# Import from local module
+from file_splitter import SplitResult, create_backup
 
 
 @dataclass
@@ -50,7 +52,11 @@ def identify_large_files(
     if extensions is None:
         extensions = [".md"]
 
-    from dewey.core.measurement.token_counter import scan_directory
+    # Import from analyze skill
+    import sys
+    analyze_scripts = Path(__file__).parent.parent.parent / "analyze" / "scripts"
+    sys.path.insert(0, str(analyze_scripts))
+    from token_counter import scan_directory
 
     results = scan_directory(directory, extensions=extensions)
     return [r for r in results if r["lines"] > max_lines]
@@ -157,7 +163,7 @@ def skill_based_split(
     target_main_lines: int = 150,
     backup: bool = True,
     dry_run: bool = False,
-) -> tuple[SplitResult, RefactorPlan]:
+) -> tuple[AnalysisRequest, str]:
     """Split file using Claude Code skill system (no separate API key needed).
 
     This function prepares the analysis request and returns the prompt.
@@ -171,7 +177,7 @@ def skill_based_split(
         dry_run: If True, only analyze without writing
 
     Returns:
-        Tuple of (SplitResult, RefactorPlan)
+        Tuple of (AnalysisRequest, prompt_string)
 
     Raises:
         FileNotFoundError: If file doesn't exist
