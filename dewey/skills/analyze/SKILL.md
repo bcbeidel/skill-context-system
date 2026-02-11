@@ -1,6 +1,6 @@
 ---
 description: Analyze context usage and generate actionable optimization recommendations
-allowed-tools: Bash(python *)
+allowed-tools: Bash(python3 *)
 ---
 
 # Analyze Context
@@ -35,30 +35,29 @@ Perform comprehensive analysis of context files to identify optimization opportu
 
 ## Implementation Steps
 
-### 1. Run Analysis Script
+### Step 1: Run the Python Analysis Script
 
-Execute the Python analysis script with default to `context` directory:
+The Python script collects deterministic metrics (file sizes, line counts, token counts).
+
+**Important**: Use the full absolute path to ensure it works:
 
 ```bash
-python3 ${CLAUDE_PLUGIN_ROOT}/skills/analyze/scripts/analyze_directory.py ${ARGUMENTS:-context}
+python3 "${CLAUDE_PLUGIN_ROOT}/skills/analyze/scripts/analyze_directory.py" ${ARGUMENTS:-context}
 ```
 
-The script will:
-- Scan the directory for matching files (default: .md files)
-- Count tokens, lines, and bytes for each file
-- Categorize files by size
-- Identify large files (>500 lines by default)
-- Generate a structured analysis prompt
-
-### 2. Analyze the Output
-
-As Claude, you will receive structured data about:
+The script outputs:
 - Total files, tokens, lines, bytes
-- Distribution across size buckets
-- List of large files (>500 lines)
-- Top files by token count
+- Token distribution by size buckets
+- Largest files by token count
+- Files exceeding threshold (>500 lines)
 
-### 3. Generate Report
+### Step 2: Review the Python Output
+
+The Python script provides structured metrics. Read this data carefully - it's the foundation for your recommendations.
+
+### Step 3: Generate Your Analysis Report
+
+**As Claude**, interpret the metrics and provide actionable recommendations:
 
 Provide a comprehensive analysis report with:
 
