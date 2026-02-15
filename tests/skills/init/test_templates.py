@@ -277,12 +277,18 @@ class TestRenderTopicMd(unittest.TestCase):
     def test_frontmatter_has_relevance(self, mock_date):
         mock_date.today.return_value = FIXED_DATE
         result = render_topic_md("API Design", "core")
-        self.assertIn("relevance: core", result)
+        self.assertIn('relevance: "core"', result)
 
     def test_frontmatter_has_depth_working(self, mock_date):
         mock_date.today.return_value = FIXED_DATE
         result = render_topic_md("API Design", "core")
         self.assertIn("depth: working", result)
+
+    def test_frontmatter_has_source_placeholder(self, mock_date):
+        mock_date.today.return_value = FIXED_DATE
+        result = render_topic_md("API Design", "core")
+        self.assertIn("<!-- Add primary source URL -->", result)
+        self.assertIn("<!-- Add source title -->", result)
 
     def test_contains_topic_heading(self, mock_date):
         mock_date.today.return_value = FIXED_DATE
@@ -301,6 +307,12 @@ class TestRenderTopicMd(unittest.TestCase):
         ]:
             with self.subTest(section=section):
                 self.assertIn(section, result)
+
+    def test_go_deeper_links_to_reference(self, mock_date):
+        mock_date.today.return_value = FIXED_DATE
+        result = render_topic_md("API Design", "core")
+        self.assertIn("[API Design Reference](api-design.ref.md)", result)
+        self.assertIn("[Source Title](url)", result)
 
     def test_contains_html_comment_placeholders(self, mock_date):
         mock_date.today.return_value = FIXED_DATE
@@ -331,12 +343,18 @@ class TestRenderTopicRefMd(unittest.TestCase):
     def test_frontmatter_has_relevance(self, mock_date):
         mock_date.today.return_value = FIXED_DATE
         result = render_topic_ref_md("API Design", "core")
-        self.assertIn("relevance: core", result)
+        self.assertIn('relevance: "core"', result)
 
     def test_frontmatter_has_last_validated(self, mock_date):
         mock_date.today.return_value = FIXED_DATE
         result = render_topic_ref_md("API Design", "core")
         self.assertIn("last_validated: 2026-01-15", result)
+
+    def test_frontmatter_has_source_placeholder(self, mock_date):
+        mock_date.today.return_value = FIXED_DATE
+        result = render_topic_ref_md("API Design", "core")
+        self.assertIn("<!-- Add primary source URL -->", result)
+        self.assertIn("<!-- Add source title -->", result)
 
     def test_contains_see_also_link(self, mock_date):
         mock_date.today.return_value = FIXED_DATE
@@ -383,7 +401,13 @@ class TestRenderProposalMd(unittest.TestCase):
     def test_frontmatter_has_relevance(self, mock_date):
         mock_date.today.return_value = FIXED_DATE
         result = render_proposal_md("New Topic", "supporting", "alice", "Needed for X")
-        self.assertIn("relevance: supporting", result)
+        self.assertIn('relevance: "supporting"', result)
+
+    def test_frontmatter_has_source_placeholder(self, mock_date):
+        mock_date.today.return_value = FIXED_DATE
+        result = render_proposal_md("New Topic", "supporting", "alice", "Needed for X")
+        self.assertIn("<!-- Add primary source URL -->", result)
+        self.assertIn("<!-- Add source title -->", result)
 
     def test_frontmatter_has_last_validated(self, mock_date):
         mock_date.today.return_value = FIXED_DATE

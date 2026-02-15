@@ -165,10 +165,13 @@ def render_topic_md(topic_name: str, relevance: str) -> str:
 
     Includes YAML frontmatter and the five required sections.
     """
+    slug = _slugify(topic_name)
     fm = _frontmatter({
-        "sources": [],
+        "sources": [
+            "url: <!-- Add primary source URL -->\n    title: <!-- Add source title -->",
+        ],
         "last_validated": _today(),
-        "relevance": relevance,
+        "relevance": f'"{relevance}"',
         "depth": "working",
     })
 
@@ -188,7 +191,9 @@ def render_topic_md(topic_name: str, relevance: str) -> str:
         "<!-- Common pitfalls, anti-patterns, and mistakes -->",
         "",
         "## Go Deeper",
-        "<!-- Links to primary sources, books, talks, and further reading -->",
+        "",
+        f"- [{topic_name} Reference]({slug}.ref.md) -- quick-lookup version",
+        "- [Source Title](url) -- primary source for full treatment",
     ]
 
     return fm + "\n\n" + "\n".join(body_lines) + "\n"
@@ -201,9 +206,11 @@ def render_topic_ref_md(topic_name: str, relevance: str) -> str:
     """
     slug = _slugify(topic_name)
     fm = _frontmatter({
-        "sources": [],
+        "sources": [
+            "url: <!-- Add primary source URL -->\n    title: <!-- Add source title -->",
+        ],
         "last_validated": _today(),
-        "relevance": relevance,
+        "relevance": f'"{relevance}"',
         "depth": "reference",
     })
 
@@ -229,9 +236,11 @@ def render_proposal_md(
     Extends the working-knowledge template with proposal-specific frontmatter.
     """
     fm = _frontmatter({
-        "sources": [],
+        "sources": [
+            "url: <!-- Add primary source URL -->\n    title: <!-- Add source title -->",
+        ],
         "last_validated": _today(),
-        "relevance": relevance,
+        "relevance": f'"{relevance}"',
         "depth": "working",
         "status": "proposal",
         "proposed_by": proposed_by,
