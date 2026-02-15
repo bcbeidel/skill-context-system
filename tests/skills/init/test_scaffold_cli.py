@@ -13,6 +13,7 @@ from pathlib import Path
 
 SCRIPT_PATH = (
     Path(__file__).resolve().parent.parent.parent.parent
+    / "dewey"
     / "skills"
     / "init"
     / "scripts"
@@ -64,10 +65,10 @@ class TestScaffoldCli(unittest.TestCase):
         )
         self.assertEqual(result.returncode, 0, msg=result.stderr)
         self.assertTrue(
-            (self.tmpdir / "knowledge" / "area-one" / "overview.md").exists()
+            (self.tmpdir / "docs" / "area-one" / "overview.md").exists()
         )
         self.assertTrue(
-            (self.tmpdir / "knowledge" / "area-two" / "overview.md").exists()
+            (self.tmpdir / "docs" / "area-two" / "overview.md").exists()
         )
 
     def test_cli_outputs_summary(self):
@@ -86,8 +87,8 @@ class TestScaffoldCli(unittest.TestCase):
         )
         self.assertIn("created", result.stdout.lower())
 
-    def test_cli_creates_knowledge_index(self):
-        """CLI creates knowledge/index.md."""
+    def test_cli_creates_docs_index(self):
+        """CLI creates docs/index.md."""
         subprocess.run(
             [
                 sys.executable,
@@ -100,7 +101,7 @@ class TestScaffoldCli(unittest.TestCase):
             capture_output=True,
             text=True,
         )
-        self.assertTrue((self.tmpdir / "knowledge" / "index.md").exists())
+        self.assertTrue((self.tmpdir / "docs" / "index.md").exists())
 
     def test_cli_creates_dewey_dirs(self):
         """CLI creates .dewey/ subdirectories."""

@@ -4,9 +4,15 @@ import datetime
 import unittest
 from unittest.mock import patch
 
-from skills.init.scripts.templates import (
+from templates import (
+    MARKER_BEGIN,
+    MARKER_END,
     _slugify,
     render_agents_md,
+    render_agents_md_section,
+    render_claude_md,
+    render_claude_md_section,
+    render_curate_plan,
     render_index_md,
     render_overview_md,
     render_proposal_md,
@@ -58,7 +64,7 @@ class TestSlugify(unittest.TestCase):
 FIXED_DATE = datetime.date(2026, 1, 15)
 
 
-@patch("skills.init.scripts.templates.date")
+@patch("templates.date")
 class TestRenderAgentsMd(unittest.TestCase):
     """Tests for render_agents_md."""
 
@@ -99,15 +105,21 @@ class TestRenderAgentsMd(unittest.TestCase):
     def test_contains_topic_entries(self, mock_date):
         mock_date.today.return_value = FIXED_DATE
         result = render_agents_md("Senior Python Developer", self._domain_areas())
-        self.assertIn("**API Design**", result)
+        self.assertIn("API Design", result)
         self.assertIn("RESTful API patterns", result)
-        self.assertIn("**Unit Testing**", result)
+        self.assertIn("Unit Testing", result)
+
+    def test_topics_use_table_format(self, mock_date):
+        mock_date.today.return_value = FIXED_DATE
+        result = render_agents_md("Senior Python Developer", self._domain_areas())
+        self.assertIn("| Topic | Description |", result)
+        self.assertIn("|-------|-------------|", result)
 
     def test_contains_how_to_use_section(self, mock_date):
         mock_date.today.return_value = FIXED_DATE
         result = render_agents_md("Senior Python Developer", self._domain_areas())
         self.assertIn("## How To Use This Knowledge", result)
-        self.assertIn("knowledge/", result)
+        self.assertIn("docs/", result)
 
     def test_contains_what_you_have_access_to_section(self, mock_date):
         mock_date.today.return_value = FIXED_DATE
@@ -120,8 +132,77 @@ class TestRenderAgentsMd(unittest.TestCase):
         self.assertIn("# Role: Generalist", result)
         self.assertIn("## What You Have Access To", result)
 
+    def test_contains_markers(self, mock_date):
+        mock_date.today.return_value = FIXED_DATE
+        result = render_agents_md("Senior Python Developer", self._domain_areas())
+        self.assertIn(MARKER_BEGIN, result)
+        self.assertIn(MARKER_END, result)
 
-@patch("skills.init.scripts.templates.date")
+    def test_user_section_outside_markers(self, mock_date):
+        mock_date.today.return_value = FIXED_DATE
+        result = render_agents_md("Senior Python Developer", self._domain_areas())
+        begin_pos = result.index(MARKER_BEGIN)
+        self.assertIn("# Role:", result[:begin_pos])
+        self.assertIn("## Who You Are", result[:begin_pos])
+
+    def test_managed_section_inside_markers(self, mock_date):
+        mock_date.today.return_value = FIXED_DATE
+        result = render_agents_md("Senior Python Developer", self._domain_areas())
+        begin_pos = result.index(MARKER_BEGIN)
+        end_pos = result.index(MARKER_END)
+        managed = result[begin_pos:end_pos]
+        self.assertIn("## What You Have Access To", managed)
+        self.assertIn("## How To Use This Knowledge", managed)
+
+    def test_mentions_ref_md(self, mock_date):
+        mock_date.today.return_value = FIXED_DATE
+        result = render_agents_md("Senior Python Developer", self._domain_areas())
+        self.assertIn(".ref.md", result)
+
+
+@patch("templates.date")
+class TestRenderAgentsMdSection(unittest.TestCase):
+    """Tests for render_agents_md_section (managed content without markers)."""
+
+    def _domain_areas(self):
+        return [
+            {
+                "name": "Backend Development",
+                "topics": [
+                    {"name": "API Design", "description": "RESTful API patterns"},
+                ],
+            },
+        ]
+
+    def test_no_markers(self, mock_date):
+        mock_date.today.return_value = FIXED_DATE
+        result = render_agents_md_section("Dev", self._domain_areas())
+        self.assertNotIn(MARKER_BEGIN, result)
+        self.assertNotIn(MARKER_END, result)
+
+    def test_contains_access_section(self, mock_date):
+        mock_date.today.return_value = FIXED_DATE
+        result = render_agents_md_section("Dev", self._domain_areas())
+        self.assertIn("## What You Have Access To", result)
+
+    def test_contains_usage_section(self, mock_date):
+        mock_date.today.return_value = FIXED_DATE
+        result = render_agents_md_section("Dev", self._domain_areas())
+        self.assertIn("## How To Use This Knowledge", result)
+
+    def test_contains_domain_areas(self, mock_date):
+        mock_date.today.return_value = FIXED_DATE
+        result = render_agents_md_section("Dev", self._domain_areas())
+        self.assertIn("### Backend Development", result)
+        self.assertIn("API Design", result)
+
+    def test_mentions_ref_md(self, mock_date):
+        mock_date.today.return_value = FIXED_DATE
+        result = render_agents_md_section("Dev", self._domain_areas())
+        self.assertIn(".ref.md", result)
+
+
+@patch("templates.date")
 class TestRenderIndexMd(unittest.TestCase):
     """Tests for render_index_md."""
 
@@ -153,13 +234,19 @@ class TestRenderIndexMd(unittest.TestCase):
         result = render_index_md("Senior Python Developer", self._domain_areas())
         self.assertIn("backend-development/overview.md", result)
 
+    def test_uses_table_format(self, mock_date):
+        mock_date.today.return_value = FIXED_DATE
+        result = render_index_md("Senior Python Developer", self._domain_areas())
+        self.assertIn("| Area | Overview |", result)
+        self.assertIn("|------|----------|", result)
+
     def test_empty_domain_areas(self, mock_date):
         mock_date.today.return_value = FIXED_DATE
         result = render_index_md("Generalist", [])
         self.assertIn("# Knowledge Base", result)
 
 
-@patch("skills.init.scripts.templates.date")
+@patch("templates.date")
 class TestRenderOverviewMd(unittest.TestCase):
     """Tests for render_overview_md."""
 
@@ -247,6 +334,12 @@ class TestRenderOverviewMd(unittest.TestCase):
         result = render_overview_md("Backend Development", "core", self._topics())
         self.assertIn("RESTful API patterns", result)
 
+    def test_topics_use_table_format(self, mock_date):
+        mock_date.today.return_value = FIXED_DATE
+        result = render_overview_md("Backend Development", "core", self._topics())
+        self.assertIn("| Topic | Description |", result)
+        self.assertIn("|-------|-------------|", result)
+
     def test_empty_topics(self, mock_date):
         mock_date.today.return_value = FIXED_DATE
         result = render_overview_md("Empty Area", "peripheral", [])
@@ -254,7 +347,7 @@ class TestRenderOverviewMd(unittest.TestCase):
         self.assertIn("depth: overview", result)
 
 
-@patch("skills.init.scripts.templates.date")
+@patch("templates.date")
 class TestRenderTopicMd(unittest.TestCase):
     """Tests for render_topic_md (working knowledge)."""
 
@@ -326,7 +419,7 @@ class TestRenderTopicMd(unittest.TestCase):
         self.assertIn("last_validated: 2026-06-30", result)
 
 
-@patch("skills.init.scripts.templates.date")
+@patch("templates.date")
 class TestRenderTopicRefMd(unittest.TestCase):
     """Tests for render_topic_ref_md (expert reference)."""
 
@@ -374,7 +467,7 @@ class TestRenderTopicRefMd(unittest.TestCase):
         self.assertIn("# API Design", result)
 
 
-@patch("skills.init.scripts.templates.date")
+@patch("templates.date")
 class TestRenderProposalMd(unittest.TestCase):
     """Tests for render_proposal_md."""
 
@@ -434,10 +527,173 @@ class TestRenderProposalMd(unittest.TestCase):
                 self.assertIn(section, result)
 
 
+@patch("templates.date")
+class TestRenderClaudeMd(unittest.TestCase):
+    """Tests for render_claude_md."""
+
+    def _domain_areas(self):
+        return [
+            {"name": "Backend Development", "dirname": "backend-development"},
+            {"name": "Testing", "dirname": "testing"},
+        ]
+
+    def test_contains_role_name(self, mock_date):
+        mock_date.today.return_value = FIXED_DATE
+        result = render_claude_md("Senior Python Developer", self._domain_areas())
+        self.assertIn("Senior Python Developer", result)
+
+    def test_references_agents_md(self, mock_date):
+        mock_date.today.return_value = FIXED_DATE
+        result = render_claude_md("Senior Python Developer", self._domain_areas())
+        self.assertIn("AGENTS.md", result)
+
+    def test_references_docs_directory(self, mock_date):
+        mock_date.today.return_value = FIXED_DATE
+        result = render_claude_md("Senior Python Developer", self._domain_areas())
+        self.assertIn("docs/", result)
+
+    def test_contains_domain_area_table(self, mock_date):
+        mock_date.today.return_value = FIXED_DATE
+        result = render_claude_md("Senior Python Developer", self._domain_areas())
+        self.assertIn("| Area | Path | Overview |", result)
+        self.assertIn("backend-development", result)
+        self.assertIn("testing", result)
+
+    def test_empty_domain_areas(self, mock_date):
+        mock_date.today.return_value = FIXED_DATE
+        result = render_claude_md("Generalist", [])
+        self.assertIn("Generalist", result)
+        self.assertNotIn("| Area |", result)
+
+    def test_contains_markers(self, mock_date):
+        mock_date.today.return_value = FIXED_DATE
+        result = render_claude_md("Senior Python Developer", self._domain_areas())
+        self.assertIn(MARKER_BEGIN, result)
+        self.assertIn(MARKER_END, result)
+
+    def test_contains_how_to_use_section(self, mock_date):
+        mock_date.today.return_value = FIXED_DATE
+        result = render_claude_md("Senior Python Developer", self._domain_areas())
+        self.assertIn("### How to Use This KB", result)
+
+    def test_contains_directory_structure(self, mock_date):
+        mock_date.today.return_value = FIXED_DATE
+        result = render_claude_md("Senior Python Developer", self._domain_areas())
+        self.assertIn("### Directory Structure", result)
+        self.assertIn("AGENTS.md", result)
+        self.assertIn("_proposals/", result)
+
+    def test_contains_frontmatter_reference(self, mock_date):
+        mock_date.today.return_value = FIXED_DATE
+        result = render_claude_md("Senior Python Developer", self._domain_areas())
+        self.assertIn("### Frontmatter Reference", result)
+        self.assertIn("`sources`", result)
+        self.assertIn("`last_validated`", result)
+        self.assertIn("`relevance`", result)
+        self.assertIn("`depth`", result)
+
+    def test_mentions_ref_md(self, mock_date):
+        mock_date.today.return_value = FIXED_DATE
+        result = render_claude_md("Senior Python Developer", self._domain_areas())
+        self.assertIn(".ref.md", result)
+
+
+@patch("templates.date")
+class TestRenderClaudeMdSection(unittest.TestCase):
+    """Tests for render_claude_md_section (managed content without markers)."""
+
+    def _domain_areas(self):
+        return [
+            {"name": "Backend Development", "dirname": "backend-development"},
+            {"name": "Testing", "dirname": "testing"},
+        ]
+
+    def test_no_markers(self, mock_date):
+        mock_date.today.return_value = FIXED_DATE
+        result = render_claude_md_section("Dev", self._domain_areas())
+        self.assertNotIn(MARKER_BEGIN, result)
+        self.assertNotIn(MARKER_END, result)
+
+    def test_contains_domain_areas(self, mock_date):
+        mock_date.today.return_value = FIXED_DATE
+        result = render_claude_md_section("Dev", self._domain_areas())
+        self.assertIn("Backend Development", result)
+        self.assertIn("Testing", result)
+
+    def test_contains_frontmatter_reference(self, mock_date):
+        mock_date.today.return_value = FIXED_DATE
+        result = render_claude_md_section("Dev", self._domain_areas())
+        self.assertIn("### Frontmatter Reference", result)
+
+    def test_contains_directory_structure(self, mock_date):
+        mock_date.today.return_value = FIXED_DATE
+        result = render_claude_md_section("Dev", self._domain_areas())
+        self.assertIn("### Directory Structure", result)
+
+    def test_contains_how_to_use(self, mock_date):
+        mock_date.today.return_value = FIXED_DATE
+        result = render_claude_md_section("Dev", self._domain_areas())
+        self.assertIn("### How to Use This KB", result)
+
+    def test_contains_overview_links(self, mock_date):
+        mock_date.today.return_value = FIXED_DATE
+        result = render_claude_md_section("Dev", self._domain_areas())
+        self.assertIn("overview.md", result)
+
+
+class TestRenderCuratePlan(unittest.TestCase):
+    """Tests for render_curate_plan."""
+
+    def test_heading(self):
+        areas = [{"name": "Testing", "slug": "testing", "starter_topics": ["Unit Testing"]}]
+        result = render_curate_plan(areas)
+        self.assertIn("## Next Steps: Populate Your Knowledge Base", result)
+
+    def test_numbered_commands(self):
+        areas = [
+            {"name": "Testing", "slug": "testing", "starter_topics": ["Unit Testing", "Integration Testing"]},
+        ]
+        result = render_curate_plan(areas)
+        self.assertIn("1. `/dewey:curate add Unit Testing in testing`", result)
+        self.assertIn("2. `/dewey:curate add Integration Testing in testing`", result)
+
+    def test_area_headings(self):
+        areas = [
+            {"name": "Testing", "slug": "testing", "starter_topics": ["Unit Testing"]},
+            {"name": "Backend", "slug": "backend", "starter_topics": ["API Design"]},
+        ]
+        result = render_curate_plan(areas)
+        self.assertIn("### Testing", result)
+        self.assertIn("### Backend", result)
+
+    def test_cross_area_numbering(self):
+        areas = [
+            {"name": "Testing", "slug": "testing", "starter_topics": ["Unit Testing"]},
+            {"name": "Backend", "slug": "backend", "starter_topics": ["API Design"]},
+        ]
+        result = render_curate_plan(areas)
+        self.assertIn("1. `/dewey:curate add Unit Testing in testing`", result)
+        self.assertIn("2. `/dewey:curate add API Design in backend`", result)
+
+    def test_empty_areas(self):
+        result = render_curate_plan([])
+        self.assertEqual(result, "")
+
+    def test_areas_without_starter_topics(self):
+        areas = [{"name": "Testing", "slug": "testing", "starter_topics": []}]
+        result = render_curate_plan(areas)
+        self.assertEqual(result, "")
+
+    def test_slugifies_name_when_no_slug(self):
+        areas = [{"name": "Backend Development", "starter_topics": ["API Design"]}]
+        result = render_curate_plan(areas)
+        self.assertIn("in backend-development", result)
+
+
 class TestReturnTypes(unittest.TestCase):
     """All render functions must return strings."""
 
-    @patch("skills.init.scripts.templates.date")
+    @patch("templates.date")
     def test_all_render_functions_return_str(self, mock_date):
         mock_date.today.return_value = FIXED_DATE
         domain_areas_agents = [
@@ -445,9 +701,14 @@ class TestReturnTypes(unittest.TestCase):
         ]
         domain_areas_index = [{"name": "Area", "dirname": "area"}]
         topics_overview = [{"name": "T", "filename": "t.md", "description": "d"}]
+        curate_areas = [{"name": "Area", "slug": "area", "starter_topics": ["T"]}]
 
         cases = [
             render_agents_md("R", domain_areas_agents),
+            render_agents_md_section("R", domain_areas_agents),
+            render_claude_md("R", domain_areas_index),
+            render_claude_md_section("R", domain_areas_index),
+            render_curate_plan(curate_areas),
             render_index_md("R", domain_areas_index),
             render_overview_md("A", "core", topics_overview),
             render_topic_md("T", "core"),
@@ -462,7 +723,7 @@ class TestReturnTypes(unittest.TestCase):
 class TestNoTrailingWhitespace(unittest.TestCase):
     """Rendered templates should not have trailing whitespace on lines."""
 
-    @patch("skills.init.scripts.templates.date")
+    @patch("templates.date")
     def test_no_trailing_whitespace(self, mock_date):
         mock_date.today.return_value = FIXED_DATE
         domain_areas_agents = [
@@ -470,9 +731,14 @@ class TestNoTrailingWhitespace(unittest.TestCase):
         ]
         domain_areas_index = [{"name": "Area", "dirname": "area"}]
         topics_overview = [{"name": "T", "filename": "t.md", "description": "d"}]
+        curate_areas = [{"name": "Area", "slug": "area", "starter_topics": ["T"]}]
 
         results = [
             ("agents_md", render_agents_md("R", domain_areas_agents)),
+            ("agents_md_section", render_agents_md_section("R", domain_areas_agents)),
+            ("claude_md", render_claude_md("R", domain_areas_index)),
+            ("claude_md_section", render_claude_md_section("R", domain_areas_index)),
+            ("curate_plan", render_curate_plan(curate_areas)),
             ("index_md", render_index_md("R", domain_areas_index)),
             ("overview_md", render_overview_md("A", "core", topics_overview)),
             ("topic_md", render_topic_md("T", "core")),

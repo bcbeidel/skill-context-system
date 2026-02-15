@@ -6,7 +6,7 @@ import unittest
 from datetime import date
 from pathlib import Path
 
-from skills.health.scripts.check_kb import run_health_check
+from check_kb import run_health_check
 
 
 def _write(path: Path, text: str) -> Path:
@@ -48,7 +48,7 @@ class TestRunHealthCheck(unittest.TestCase):
 
     def setUp(self):
         self.tmpdir = Path(tempfile.mkdtemp())
-        self.kb = self.tmpdir / "knowledge"
+        self.kb = self.tmpdir / "docs"
         self.kb.mkdir()
 
     def tearDown(self):

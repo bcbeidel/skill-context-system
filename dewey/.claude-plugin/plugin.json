@@ -14,27 +14,5 @@
     "validation",
     "scaffolding"
   ],
-  "license": "MIT",
-  "skills": [
-    {
-      "name": "init",
-      "description": "Bootstrap a new knowledge base with the standard directory structure, AGENTS.md, and content templates",
-      "source": "../../skills/init"
-    },
-    {
-      "name": "curate",
-      "description": "Add, propose, promote, and ingest content in a knowledge base following the KB specification",
-      "source": "../../skills/curate"
-    },
-    {
-      "name": "health",
-      "description": "Validate knowledge base quality, check freshness, analyze coverage gaps, and generate health reports",
-      "source": "../../skills/health"
-    },
-    {
-      "name": "explore",
-      "description": "Discover what knowledge domains to capture through guided conversation about your problems, tasks, and goals",
-      "source": "../../skills/explore"
-    }
-  ]
+  "license": "MIT"
 }

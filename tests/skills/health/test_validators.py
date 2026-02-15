@@ -6,7 +6,7 @@ import unittest
 from datetime import date, timedelta
 from pathlib import Path
 
-from skills.health.scripts.validators import (
+from validators import (
     check_coverage,
     check_cross_references,
     check_freshness,
@@ -197,7 +197,7 @@ class TestCheckCrossReferences(unittest.TestCase):
 
     def setUp(self):
         self.tmpdir = Path(tempfile.mkdtemp())
-        self.kb = self.tmpdir / "knowledge"
+        self.kb = self.tmpdir / "docs"
         self.kb.mkdir()
 
     def tearDown(self):
@@ -280,7 +280,7 @@ class TestCheckCoverage(unittest.TestCase):
 
     def setUp(self):
         self.tmpdir = Path(tempfile.mkdtemp())
-        self.kb = self.tmpdir / "knowledge"
+        self.kb = self.tmpdir / "docs"
         self.kb.mkdir()
 
     def tearDown(self):

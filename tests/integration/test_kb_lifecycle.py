@@ -4,11 +4,12 @@ import tempfile
 import shutil
 from pathlib import Path
 
-from skills.init.scripts.scaffold import scaffold_kb
-from skills.curate.scripts.create_topic import create_topic
-from skills.curate.scripts.propose import create_proposal
-from skills.curate.scripts.promote import promote_proposal
-from skills.health.scripts.check_kb import run_health_check
+from scaffold import scaffold_kb
+from templates import MARKER_BEGIN, MARKER_END
+from create_topic import create_topic
+from propose import create_proposal
+from promote import promote_proposal
+from check_kb import run_health_check
 
 
 class TestKBLifecycle(unittest.TestCase):
@@ -23,23 +24,31 @@ class TestKBLifecycle(unittest.TestCase):
         result = scaffold_kb(self.tmpdir, "Test Analyst", ["Domain A"])
         self.assertIn("created", result.lower())
         self.assertTrue((self.tmpdir / "AGENTS.md").exists())
-        self.assertTrue((self.tmpdir / "knowledge" / "domain-a" / "overview.md").exists())
+        self.assertTrue((self.tmpdir / "docs" / "domain-a" / "overview.md").exists())
+
+        # Verify markers in generated files
+        claude_content = (self.tmpdir / "CLAUDE.md").read_text()
+        self.assertIn(MARKER_BEGIN, claude_content)
+        self.assertIn(MARKER_END, claude_content)
+        agents_content = (self.tmpdir / "AGENTS.md").read_text()
+        self.assertIn(MARKER_BEGIN, agents_content)
+        self.assertIn(MARKER_END, agents_content)
 
         # 2. Add a topic
         result = create_topic(self.tmpdir, "domain-a", "First Topic", "Testing the lifecycle")
-        self.assertTrue((self.tmpdir / "knowledge" / "domain-a" / "first-topic.md").exists())
-        self.assertTrue((self.tmpdir / "knowledge" / "domain-a" / "first-topic.ref.md").exists())
+        self.assertTrue((self.tmpdir / "docs" / "domain-a" / "first-topic.md").exists())
+        self.assertTrue((self.tmpdir / "docs" / "domain-a" / "first-topic.ref.md").exists())
 
         # 3. Propose a new topic
         result = create_proposal(self.tmpdir, "Second Topic", "Another test", "human", "Testing proposals")
-        self.assertTrue((self.tmpdir / "knowledge" / "_proposals" / "second-topic.md").exists())
+        self.assertTrue((self.tmpdir / "docs" / "_proposals" / "second-topic.md").exists())
 
         # 4. Promote the proposal
         result = promote_proposal(self.tmpdir, "second-topic", "domain-a")
-        self.assertTrue((self.tmpdir / "knowledge" / "domain-a" / "second-topic.md").exists())
-        self.assertFalse((self.tmpdir / "knowledge" / "_proposals" / "second-topic.md").exists())
+        self.assertTrue((self.tmpdir / "docs" / "domain-a" / "second-topic.md").exists())
+        self.assertFalse((self.tmpdir / "docs" / "_proposals" / "second-topic.md").exists())
         # Verify proposal frontmatter was stripped
-        content = (self.tmpdir / "knowledge" / "domain-a" / "second-topic.md").read_text()
+        content = (self.tmpdir / "docs" / "domain-a" / "second-topic.md").read_text()
         self.assertNotIn("status: proposal", content)
 
         # 5. Run health check
@@ -83,4 +92,4 @@ class TestSandboxKB(unittest.TestCase):
             create_topic(sandbox, "data-analysis", "Statistical Testing", "When and how to apply statistical tests")
 
         self.assertTrue((sandbox / "AGENTS.md").exists())
-        self.assertTrue((sandbox / "knowledge" / "index.md").exists())
+        self.assertTrue((sandbox / "docs" / "index.md").exists())

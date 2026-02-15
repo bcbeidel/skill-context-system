@@ -5,7 +5,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from skills.curate.scripts.promote import promote_proposal
+from promote import promote_proposal
 
 
 class TestPromoteProposal(unittest.TestCase):
@@ -13,8 +13,8 @@ class TestPromoteProposal(unittest.TestCase):
 
     def setUp(self):
         self.tmpdir = Path(tempfile.mkdtemp())
-        (self.tmpdir / "knowledge" / "_proposals").mkdir(parents=True)
-        (self.tmpdir / "knowledge" / "campaign-management").mkdir(parents=True)
+        (self.tmpdir / "docs" / "_proposals").mkdir(parents=True)
+        (self.tmpdir / "docs" / "campaign-management").mkdir(parents=True)
 
         # Create a sample proposal file with proposal-specific frontmatter
         self.proposal_content = (
@@ -35,7 +35,7 @@ class TestPromoteProposal(unittest.TestCase):
             "## Why This Matters\n"
             "Content here.\n"
         )
-        (self.tmpdir / "knowledge" / "_proposals" / "bid-strategies.md").write_text(
+        (self.tmpdir / "docs" / "_proposals" / "bid-strategies.md").write_text(
             self.proposal_content
         )
 
@@ -46,14 +46,14 @@ class TestPromoteProposal(unittest.TestCase):
         """File exists in target area after promotion."""
         promote_proposal(self.tmpdir, "bid-strategies", "campaign-management")
         self.assertTrue(
-            (self.tmpdir / "knowledge" / "campaign-management" / "bid-strategies.md").is_file()
+            (self.tmpdir / "docs" / "campaign-management" / "bid-strategies.md").is_file()
         )
 
     def test_removes_proposal_status_from_frontmatter(self):
         """Promoted file has no status, proposed_by, or rationale fields."""
         promote_proposal(self.tmpdir, "bid-strategies", "campaign-management")
         content = (
-            self.tmpdir / "knowledge" / "campaign-management" / "bid-strategies.md"
+            self.tmpdir / "docs" / "campaign-management" / "bid-strategies.md"
         ).read_text()
         self.assertNotIn("status:", content)
         self.assertNotIn("proposed_by:", content)
@@ -63,7 +63,7 @@ class TestPromoteProposal(unittest.TestCase):
         """Original proposal file is deleted after promotion."""
         promote_proposal(self.tmpdir, "bid-strategies", "campaign-management")
         self.assertFalse(
-            (self.tmpdir / "knowledge" / "_proposals" / "bid-strategies.md").exists()
+            (self.tmpdir / "docs" / "_proposals" / "bid-strategies.md").exists()
         )
 
     def test_raises_if_proposal_not_found(self):

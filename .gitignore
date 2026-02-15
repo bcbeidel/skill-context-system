@@ -1,0 +1,17 @@
+# Sandbox (testing scratch space)
+sandbox/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+
+# pytest
+.pytest_cache/
+
+# Environment
+.env
+.venv/
