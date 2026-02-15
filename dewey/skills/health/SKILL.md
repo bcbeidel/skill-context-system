@@ -154,6 +154,16 @@ Every trigger returns: `{"file": str, "trigger": str, "reason": str, "context": 
 **utilization.py** -- Topic reference tracking
 - `record_reference(kb_root, file_path, context="user")` -- Appends to `.dewey/utilization/log.jsonl`
 - `read_utilization(kb_root)` -- Returns per-file stats: `{file: {count, first_referenced, last_referenced}}`
+
+**log_access.py** -- Hook-driven utilization logging
+- `log_if_knowledge_file(kb_root, file_path)` -- Logs access if file is a .md under the knowledge directory
+- Filters out _proposals, non-.md files, and files outside the knowledge directory
+- Called by `hook_log_access.py` (Claude Code PostToolUse hook entry point)
+
+**hook_log_access.py** -- CLI entry point for Claude Code PostToolUse hook
+- Reads tool input JSON from stdin, extracts file_path
+- Calls `log_if_knowledge_file` to conditionally log the access
+- Exit code always 0 (hook failures never block the agent)
 </scripts_integration>
 
 <success_criteria>
