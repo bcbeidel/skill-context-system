@@ -1,5 +1,6 @@
 """Tests for skills.init.scripts.scaffold — knowledge-base directory scaffolding."""
 
+import json
 import os
 import shutil
 import tempfile
@@ -338,6 +339,29 @@ class TestScaffoldKB(unittest.TestCase):
         )
         content = (self.tmpdir / ".dewey" / "curation-plan.md").read_text()
         self.assertEqual(content.count("## testing"), 1)
+
+    def test_creates_hooks_json(self):
+        """.claude/hooks.json is created with utilization hook."""
+        scaffold_kb(self.tmpdir, "Analyst")
+        hooks_path = self.tmpdir / ".claude" / "hooks.json"
+        self.assertTrue(hooks_path.exists())
+        parsed = json.loads(hooks_path.read_text())
+        self.assertIn("PostToolUse", parsed["hooks"])
+
+    def test_hooks_json_not_overwritten(self):
+        """.claude/hooks.json is not overwritten if it already exists."""
+        hooks_dir = self.tmpdir / ".claude"
+        hooks_dir.mkdir(parents=True, exist_ok=True)
+        hooks_path = hooks_dir / "hooks.json"
+        hooks_path.write_text('{"custom": true}\n')
+        scaffold_kb(self.tmpdir, "Analyst")
+        content = hooks_path.read_text()
+        self.assertEqual(content, '{"custom": true}\n')
+
+    def test_hooks_json_in_summary(self):
+        """Summary lists .claude/hooks.json as created."""
+        result = scaffold_kb(self.tmpdir, "Analyst")
+        self.assertIn(".claude/hooks.json", result)
 
 
 class TestParseAgentsTopics(unittest.TestCase):

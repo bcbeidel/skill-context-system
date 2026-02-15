@@ -23,6 +23,7 @@ from templates import (
     render_claude_md_section,
     render_curate_plan,
     render_curation_plan_md,
+    render_hooks_json,
     render_index_md,
     render_overview_md,
 )
@@ -371,7 +372,17 @@ def scaffold_kb(
     created.append(f"{knowledge_dir}/index.md" + (" (updated)" if index_existed else ""))
 
     # ------------------------------------------------------------------
-    # 7. Curation plan (.dewey/curation-plan.md)
+    # 7. .claude/hooks.json (utilization tracking hook)
+    # ------------------------------------------------------------------
+    hooks_path = target_dir / ".claude" / "hooks.json"
+    if not hooks_path.exists():
+        hooks_path.parent.mkdir(parents=True, exist_ok=True)
+        plugin_root = str(Path(__file__).resolve().parent.parent.parent.parent)
+        hooks_path.write_text(render_hooks_json(plugin_root, str(target_dir)))
+        created.append(".claude/hooks.json")
+
+    # ------------------------------------------------------------------
+    # 8. Curation plan (.dewey/curation-plan.md)
     # ------------------------------------------------------------------
     if starter_topics:
         plan_areas = []

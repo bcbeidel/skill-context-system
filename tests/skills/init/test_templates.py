@@ -1,6 +1,7 @@
 """Tests for skills.init.scripts.templates — knowledge-base content template rendering."""
 
 import datetime
+import json
 import unittest
 from unittest.mock import patch
 
@@ -14,6 +15,7 @@ from templates import (
     render_claude_md_section,
     render_curate_plan,
     render_curation_plan_md,
+    render_hooks_json,
     render_index_md,
     render_overview_md,
     render_proposal_md,
@@ -855,6 +857,33 @@ class TestRenderCuratePlan(unittest.TestCase):
         self.assertIn("in backend-development", result)
 
 
+class TestRenderHooksJson(unittest.TestCase):
+    """Tests for render_hooks_json."""
+
+    def test_returns_valid_json(self):
+        result = render_hooks_json(plugin_root="/path/to/plugin", kb_root="/path/to/kb")
+        parsed = json.loads(result)
+        self.assertIn("hooks", parsed)
+
+    def test_contains_post_tool_use(self):
+        result = render_hooks_json(plugin_root="/path/to/plugin", kb_root="/path/to/kb")
+        parsed = json.loads(result)
+        self.assertIn("PostToolUse", parsed["hooks"])
+
+    def test_matcher_is_read(self):
+        result = render_hooks_json(plugin_root="/path/to/plugin", kb_root="/path/to/kb")
+        parsed = json.loads(result)
+        hook_group = parsed["hooks"]["PostToolUse"][0]
+        self.assertEqual(hook_group["matcher"], "Read")
+
+    def test_command_references_script(self):
+        result = render_hooks_json(plugin_root="/path/to/plugin", kb_root="/path/to/kb")
+        parsed = json.loads(result)
+        command = parsed["hooks"]["PostToolUse"][0]["hooks"][0]["command"]
+        self.assertIn("hook_log_access.py", command)
+        self.assertIn("/path/to/kb", command)
+
+
 class TestReturnTypes(unittest.TestCase):
     """All render functions must return strings."""
 
@@ -875,6 +904,7 @@ class TestReturnTypes(unittest.TestCase):
             render_claude_md_section("R", domain_areas_index),
             render_curate_plan(curate_areas),
             render_curation_plan_md(curate_areas),
+            render_hooks_json("/plugin", "/kb"),
             render_index_md("R", domain_areas_index),
             render_overview_md("A", "core", topics_overview),
             render_topic_md("T", "core"),
@@ -906,6 +936,7 @@ class TestNoTrailingWhitespace(unittest.TestCase):
             ("claude_md_section", render_claude_md_section("R", domain_areas_index)),
             ("curate_plan", render_curate_plan(curate_areas)),
             ("curation_plan_md", render_curation_plan_md(curate_areas)),
+            ("hooks_json", render_hooks_json("/plugin", "/kb")),
             ("index_md", render_index_md("R", domain_areas_index)),
             ("overview_md", render_overview_md("A", "core", topics_overview)),
             ("topic_md", render_topic_md("T", "core")),

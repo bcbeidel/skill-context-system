@@ -7,6 +7,7 @@ Managed sections are bracketed by MARKER_BEGIN / MARKER_END for safe merging.
 
 from __future__ import annotations
 
+import json
 import re
 from datetime import date
 
@@ -521,3 +522,32 @@ def render_curate_plan(domain_areas: list[dict]) -> str:
 
     header = ["## Next Steps: Populate Your Knowledge Base", ""]
     return "\n".join(header + lines).rstrip("\n") + "\n"
+
+
+def render_hooks_json(plugin_root: str, kb_root: str) -> str:
+    """Render .claude/hooks.json for utilization tracking.
+
+    Parameters
+    ----------
+    plugin_root:
+        Absolute path to the dewey plugin root directory.
+    kb_root:
+        Absolute path to the knowledge base root directory.
+    """
+    script_path = f"{plugin_root}/skills/health/scripts/hook_log_access.py"
+    hooks = {
+        "hooks": {
+            "PostToolUse": [
+                {
+                    "matcher": "Read",
+                    "hooks": [
+                        {
+                            "type": "command",
+                            "command": f"python3 {script_path} --kb-root {kb_root}",
+                        }
+                    ],
+                }
+            ]
+        }
+    }
+    return json.dumps(hooks, indent=2) + "\n"
