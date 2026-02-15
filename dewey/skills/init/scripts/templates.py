@@ -80,7 +80,8 @@ def render_agents_md_section(role_name: str, domain_areas: list[dict], *, knowle
             sections.append("| Topic | Description |")
             sections.append("|-------|-------------|")
             for topic in topics:
-                sections.append(f"| [{topic['name']}]({knowledge_dir}/{_slugify(area['name'])}/{_slugify(topic['name'])}.md) | {topic['description']} |")
+                link = topic.get("path", f"{knowledge_dir}/{_slugify(area['name'])}/{_slugify(topic['name'])}.md")
+                sections.append(f"| [{topic['name']}]({link}) | {topic['description']} |")
         sections.append("")
 
     # Remove trailing blank if domain_areas was non-empty

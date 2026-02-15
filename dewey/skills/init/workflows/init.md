@@ -7,6 +7,22 @@ Load `references/kb-spec-summary.md` for context on the knowledge base specifica
 </required_reading>
 
 <process>
+## Step 0: Check for existing knowledge base
+
+Check if `.dewey/config.json` exists in the target directory.
+
+If it does, this is a **re-init** — the user wants to modify an existing knowledge base:
+
+1. Read existing config, AGENTS.md, and `.dewey/curation-plan.md`
+2. Show the user: persona, domain areas, curated topic count, curation plan progress
+3. Ask what they want to change (add areas, update persona, change directory)
+4. For adding areas: propose only the NEW areas, then proceed to Step 5 with ALL areas (existing + new)
+
+Important: scaffold preserves existing topic entries and curation progress automatically.
+Pass the complete area list (existing + new) to the scaffold command.
+
+If no config exists, proceed to Step 1 as normal.
+
 ## Step 1: Evaluate the repo
 
 Look at what already exists in the target directory:

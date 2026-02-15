@@ -6,7 +6,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from scaffold import merge_managed_section, scaffold_kb
+from scaffold import _parse_agents_topics, merge_managed_section, scaffold_kb
 from templates import MARKER_BEGIN, MARKER_END
 
 
@@ -256,6 +256,110 @@ class TestScaffoldKB(unittest.TestCase):
         scaffold_kb(self.tmpdir, "Analyst", knowledge_dir="kb")
         content = (self.tmpdir / "AGENTS.md").read_text()
         self.assertIn("`kb/`", content)
+
+    def test_reinit_preserves_topic_entries(self):
+        """Re-running scaffold preserves topic entries in AGENTS.md."""
+        scaffold_kb(self.tmpdir, "Analyst", domain_areas=["Testing"])
+        # Simulate curate-promote adding a topic
+        agents = self.tmpdir / "AGENTS.md"
+        content = agents.read_text()
+        content = content.replace(
+            "### Testing\n",
+            "### Testing\n\n| Topic | Description |\n|-------|-------------|\n"
+            "| [Unit Tests](docs/testing/unit-tests.md) | How to write unit tests |\n",
+        )
+        agents.write_text(content)
+        # Re-scaffold
+        scaffold_kb(self.tmpdir, "Analyst", domain_areas=["Testing"])
+        new_content = agents.read_text()
+        self.assertIn("Unit Tests", new_content)
+        self.assertIn("How to write unit tests", new_content)
+
+    def test_reinit_preserves_topics_when_adding_areas(self):
+        """Adding new areas preserves existing topic entries."""
+        scaffold_kb(self.tmpdir, "Analyst", domain_areas=["Testing"])
+        agents = self.tmpdir / "AGENTS.md"
+        content = agents.read_text()
+        content = content.replace(
+            "### Testing\n",
+            "### Testing\n\n| Topic | Description |\n|-------|-------------|\n"
+            "| [Unit Tests](docs/testing/unit-tests.md) | How to write unit tests |\n",
+        )
+        agents.write_text(content)
+        scaffold_kb(self.tmpdir, "Analyst", domain_areas=["Testing", "Backend"])
+        new_content = agents.read_text()
+        self.assertIn("Unit Tests", new_content)
+        self.assertIn("### Backend", new_content)
+
+    def test_index_md_updated_on_reinit(self):
+        """index.md includes new areas after re-scaffold."""
+        scaffold_kb(self.tmpdir, "Analyst", domain_areas=["Testing"])
+        scaffold_kb(self.tmpdir, "Analyst", domain_areas=["Testing", "Backend"])
+        content = (self.tmpdir / "docs" / "index.md").read_text()
+        self.assertIn("backend/overview.md", content)
+        self.assertIn("testing/overview.md", content)
+
+    def test_curation_plan_preserves_progress_on_reinit(self):
+        """Re-scaffold preserves [x] checkmarks in curation plan."""
+        scaffold_kb(
+            self.tmpdir, "Analyst",
+            domain_areas=["Testing"],
+            starter_topics={"Testing": ["Unit Testing"]},
+        )
+        plan = self.tmpdir / ".dewey" / "curation-plan.md"
+        plan.write_text(plan.read_text().replace("- [ ] Unit Testing", "- [x] Unit Testing"))
+        scaffold_kb(
+            self.tmpdir, "Analyst",
+            domain_areas=["Testing", "Backend"],
+            starter_topics={"Testing": ["Unit Testing"], "Backend": ["APIs"]},
+        )
+        content = plan.read_text()
+        self.assertIn("- [x] Unit Testing", content)
+        self.assertIn("- [ ] APIs", content)
+
+    def test_curation_plan_no_duplicate_areas(self):
+        """Re-scaffold doesn't duplicate existing plan areas."""
+        scaffold_kb(
+            self.tmpdir, "Analyst",
+            domain_areas=["Testing"],
+            starter_topics={"Testing": ["Unit Testing"]},
+        )
+        scaffold_kb(
+            self.tmpdir, "Analyst",
+            domain_areas=["Testing"],
+            starter_topics={"Testing": ["Unit Testing"]},
+        )
+        content = (self.tmpdir / ".dewey" / "curation-plan.md").read_text()
+        self.assertEqual(content.count("## testing"), 1)
+
+
+class TestParseAgentsTopics(unittest.TestCase):
+    """Tests for the _parse_agents_topics helper."""
+
+    def test_extracts_entries(self):
+        """_parse_agents_topics extracts topic rows from managed section."""
+        content = (
+            "# Role\n\n"
+            + MARKER_BEGIN + "\n"
+            "## What You Have Access To\n"
+            "### Testing\n\n"
+            "| Topic | Description |\n"
+            "|-------|-------------|\n"
+            "| [Unit Tests](docs/testing/unit-tests.md) | How to test |\n\n"
+            "### Backend\n"
+            + MARKER_END
+        )
+        result = _parse_agents_topics(content)
+        self.assertEqual(len(result["Testing"]), 1)
+        self.assertEqual(result["Testing"][0]["name"], "Unit Tests")
+        self.assertEqual(result["Testing"][0]["path"], "docs/testing/unit-tests.md")
+        self.assertEqual(result["Testing"][0]["description"], "How to test")
+        self.assertEqual(result["Backend"], [])
+
+    def test_no_markers_returns_empty(self):
+        """_parse_agents_topics returns empty dict when no markers present."""
+        result = _parse_agents_topics("# Just a file\nNo markers here.")
+        self.assertEqual(result, {})
 
 
 class TestMergeManagedSection(unittest.TestCase):

@@ -7,6 +7,7 @@ using marker-based managed sections.
 from __future__ import annotations
 
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -15,6 +16,7 @@ from templates import (
     MARKER_BEGIN,
     MARKER_END,
     _slugify,
+    _today,
     render_agents_md,
     render_agents_md_section,
     render_claude_md,
@@ -24,6 +26,77 @@ from templates import (
     render_index_md,
     render_overview_md,
 )
+
+
+def _parse_agents_topics(agents_content: str) -> dict[str, list[dict]]:
+    """Extract topic table entries from existing AGENTS.md managed section.
+
+    Returns mapping of area name -> list of {"name", "path", "description"}.
+    """
+    if MARKER_BEGIN not in agents_content or MARKER_END not in agents_content:
+        return {}
+    begin = agents_content.index(MARKER_BEGIN)
+    end = agents_content.index(MARKER_END)
+    managed = agents_content[begin:end]
+
+    topics_by_area: dict[str, list[dict]] = {}
+    current_area: str | None = None
+    for line in managed.split("\n"):
+        heading_match = re.match(r"^### (.+)$", line)
+        if heading_match:
+            current_area = heading_match.group(1)
+            topics_by_area[current_area] = []
+            continue
+        if current_area is not None:
+            row_match = re.match(r"^\| \[(.+?)\]\((.+?)\) \| (.+?) \|$", line)
+            if row_match:
+                topics_by_area[current_area].append({
+                    "name": row_match.group(1),
+                    "path": row_match.group(2),
+                    "description": row_match.group(3),
+                })
+    return topics_by_area
+
+
+def _merge_curation_plan(existing_content: str, new_areas: list[dict]) -> str:
+    """Merge new area sections into existing curation plan, preserving progress."""
+    existing_slugs: set[str] = set()
+    for line in existing_content.split("\n"):
+        if line.startswith("## "):
+            existing_slugs.add(line[3:].strip())
+
+    new_sections: list[str] = []
+    for area in new_areas:
+        slug = area.get("slug") or _slugify(area["name"])
+        if slug in existing_slugs:
+            continue
+        topics = area.get("starter_topics", [])
+        if not topics:
+            continue
+        lines = [f"## {slug}"]
+        for topic in topics:
+            if isinstance(topic, str):
+                name, relevance, rationale = topic, "core", ""
+            else:
+                name = topic["name"]
+                relevance = topic.get("relevance", "core")
+                rationale = topic.get("rationale", "")
+            entry = f"- [ ] {name} -- {relevance}"
+            if rationale:
+                entry += f" -- {rationale}"
+            lines.append(entry)
+        new_sections.append("\n".join(lines))
+
+    if not new_sections:
+        return existing_content
+
+    # Update last_updated in frontmatter
+    updated = re.sub(
+        r"last_updated: \d{4}-\d{2}-\d{2}",
+        f"last_updated: {_today()}",
+        existing_content,
+    )
+    return updated.rstrip("\n") + "\n\n" + "\n\n".join(new_sections) + "\n"
 
 
 def merge_managed_section(
@@ -134,14 +207,20 @@ def scaffold_kb(
         area_slugs.append({"name": name, "dirname": _slugify(name)})
 
     # For AGENTS.md we need the slightly richer format (with topics list)
+    # Discover existing topics from current AGENTS.md to preserve on re-init
+    existing_topics: dict[str, list[dict]] = {}
+    agents_path = target_dir / "AGENTS.md"
+    if agents_path.exists():
+        existing_topics = _parse_agents_topics(agents_path.read_text())
+
     agents_areas: list[dict] = []
     for name in domain_areas:
-        agents_areas.append({"name": name, "topics": []})
+        preserved = existing_topics.get(name, [])
+        agents_areas.append({"name": name, "topics": preserved})
 
     # ------------------------------------------------------------------
     # 3. AGENTS.md (merge-safe)
     # ------------------------------------------------------------------
-    agents_path = target_dir / "AGENTS.md"
     existing_agents = agents_path.read_text() if agents_path.exists() else None
     agents_section = render_agents_md_section(role_name, agents_areas, knowledge_dir=knowledge_dir)
     agents_full = render_agents_md(role_name, agents_areas, knowledge_dir=knowledge_dir)
@@ -170,9 +249,9 @@ def scaffold_kb(
     # 5. index.md inside the knowledge directory
     # ------------------------------------------------------------------
     index_path = knowledge_path / "index.md"
-    if not index_path.exists():
-        index_path.write_text(render_index_md(role_name, area_slugs))
-        created.append(f"{knowledge_dir}/index.md")
+    index_existed = index_path.exists()
+    index_path.write_text(render_index_md(role_name, area_slugs))
+    created.append(f"{knowledge_dir}/index.md" + (" (updated)" if index_existed else ""))
 
     # ------------------------------------------------------------------
     # 6. Domain area directories + overview.md
@@ -204,8 +283,13 @@ def scaffold_kb(
                 })
         if plan_areas:
             plan_path = target_dir / ".dewey" / "curation-plan.md"
-            plan_path.write_text(render_curation_plan_md(plan_areas))
-            created.append(".dewey/curation-plan.md")
+            if plan_path.exists():
+                existing_plan = plan_path.read_text()
+                plan_path.write_text(_merge_curation_plan(existing_plan, plan_areas))
+                created.append(".dewey/curation-plan.md (updated)")
+            else:
+                plan_path.write_text(render_curation_plan_md(plan_areas))
+                created.append(".dewey/curation-plan.md")
 
     # ------------------------------------------------------------------
     # Summary
