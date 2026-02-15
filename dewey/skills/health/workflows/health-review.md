@@ -19,8 +19,12 @@ For entries where Tier 2 flagged weak relevance or where the role has evolved:
 
 ### 2b. Scope decisions
 
-For entries with low utilization (if `.dewey/utilization/` data exists) or narrow relevance:
+Check whether `.dewey/utilization/` exists and contains data files. If utilization data is available, include usage-based signals:
 - "Should `<topic>` be pruned? It has not been referenced in <N> days."
+
+If utilization data is **not** available, skip usage-based pruning signals and note: "Utilization tracking is not yet configured. Scope decisions are based on structural analysis only."
+
+Regardless of utilization data, check for structural scope issues:
 - "Should `<area>` be consolidated? It contains only an overview and one topic."
 
 ### 2c. Proposal decisions

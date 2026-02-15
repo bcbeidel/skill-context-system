@@ -5,11 +5,13 @@ Analyze coverage gaps by comparing AGENTS.md role responsibilities against knowl
 <process>
 ## Step 1: Parse AGENTS.md
 
-Read `AGENTS.md` from the KB root. Extract:
+Read `AGENTS.md` from the KB root. Extract these three things:
 
-1. **Role name** -- The role this KB serves
-2. **Responsibilities** -- The key responsibilities or behavioral expectations listed
-3. **Manifest entries** -- The domain areas and topics listed in the manifest section
+1. **Role definition** -- The role title from the `# Role:` heading (first H1)
+2. **Persona scope** -- The prose description in the "Who You Are" section. This describes the agent's expertise and behavioral scope. Note the domains and skills it mentions -- these define what the KB _should_ cover.
+3. **Manifest entries** -- Inside the `<!-- dewey:kb:begin -->` / `<!-- dewey:kb:end -->` markers, extract:
+   - **Domain areas** -- Each H3 heading (e.g., `### python-foundations`)
+   - **Topics per area** -- Rows in the markdown table under each H3 (columns: Topic, Description). An area with no table rows is empty.
 
 If AGENTS.md does not exist, report: "No AGENTS.md found. Use `/dewey:init` to create one."
 
@@ -24,21 +26,22 @@ Walk the `docs/` directory structure. Build a map of:
 
 ## Step 3: Identify gaps
 
-Compare AGENTS.md responsibilities against docs/ contents:
+Compare the AGENTS.md persona scope and manifest against docs/ contents:
 
-### 3a. Responsibility gaps
+### 3a. Persona-vs-KB gaps
 
-For each responsibility listed in AGENTS.md, check whether there is a corresponding domain area or topic. Flag responsibilities with no matching content:
+Read the persona description from "Who You Are" and the role title. Identify domains, skills, or expertise areas the persona mentions that are **not covered** by any existing domain area or topic in docs/. Use judgment -- the persona is prose, not a structured list, so look for described capabilities that have no corresponding KB content.
 
-"**Gap:** Responsibility '<responsibility>' has no corresponding domain area or topic."
+Example: If the role says "building Streamlit applications that scale toward production Snowflake deployments" but there is no topic covering Snowflake integration patterns, flag it:
 
-Use semantic matching -- the responsibility text may not exactly match a directory name, so look for reasonable correspondence.
+"**Gap:** The persona describes '<capability>' but no domain area or topic covers this."
 
-### 3b. Orphan content
+### 3b. Manifest-vs-filesystem orphans
 
-For each domain area and topic in docs/, check whether it connects to a responsibility in AGENTS.md. Flag content with no matching responsibility:
+Compare the manifest entries (from Step 1) against the actual docs/ filesystem (from Step 2):
 
-"**Orphan:** Topic '<topic>' in '<area>' is not connected to any listed responsibility."
+- **In manifest but missing from filesystem:** A topic row in AGENTS.md points to a file that doesn't exist in docs/. Flag: "**Broken link:** Manifest lists `<topic>` at `<path>` but file does not exist."
+- **In filesystem but missing from manifest:** A topic .md file exists in docs/ but has no corresponding row in the AGENTS.md manifest table. Flag: "**Orphan:** `<path>` exists in docs/ but is not listed in the AGENTS.md manifest."
 
 ### 3c. Thin areas
 
@@ -53,23 +56,24 @@ For each domain area, check content depth:
 ## Coverage Report
 
 ### Summary
-- Role: <role name>
-- Responsibilities tracked: <N>
-- Domain areas: <N>
-- Total topics: <N>
-- Coverage score: <responsibilities with content / total responsibilities>
+- Role: <role title>
+- Persona scope areas identified: <N>
+- Domain areas in manifest: <N>
+- Total topics in manifest: <N>
+- Total topic files in docs/: <N>
 
-### Gaps (responsibilities without content)
+### Persona Gaps (described scope not covered by KB)
 
-| Responsibility | Suggested Area | Priority |
-|----------------|---------------|----------|
-| <responsibility> | <suggested area name> | <high/medium/low> |
+| Capability from Persona | Suggested Area | Priority |
+|------------------------|---------------|----------|
+| <capability> | <suggested area name> | <high/medium/low> |
 
-### Orphans (content without responsibility)
+### Manifest/Filesystem Mismatches
 
-| Content | Area | Suggestion |
-|---------|------|------------|
-| <topic> | <area> | Add to AGENTS.md manifest / Consider removing |
+| Issue | Path | Action |
+|-------|------|--------|
+| Broken link | <manifest path> | Create file or remove manifest entry |
+| Orphan file | <filesystem path> | Add to AGENTS.md manifest or consider removing |
 
 ### Thin Areas (minimal coverage)
 
@@ -86,10 +90,10 @@ For each domain area, check content depth:
 </process>
 
 <success_criteria>
-- AGENTS.md is parsed for responsibilities and manifest entries
+- AGENTS.md is parsed for role title, persona scope, and manifest entries (domain areas + topic tables)
 - Knowledge directory structure is fully scanned
-- Gaps identify responsibilities without corresponding content
-- Orphans identify content not connected to responsibilities
+- Persona gaps identify described capabilities without corresponding KB content
+- Manifest/filesystem mismatches identify broken links and orphan files
 - Thin areas flag domain areas needing deeper coverage
 - Recommendations point to specific Dewey skills for remediation
 </success_criteria>
