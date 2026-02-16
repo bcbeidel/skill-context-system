@@ -3,21 +3,14 @@ Submit a topic proposal for review before adding it to the knowledge base.
 </objective>
 
 <process>
-## Step 1: Parse arguments and gather proposal details
+## Step 1: Resolve proposal details from intake
 
-Parse `$ARGUMENTS` for topic name, relevance, rationale, and proposed-by. Valid invocations:
+The intake classifier identified a proposal intent. Extract:
 
-- `/dewey:curate propose Audience Segmentation` -- topic name only
-- `/dewey:curate propose Audience Segmentation --relevance supporting` -- topic name + relevance
-- `/dewey:curate propose Audience Segmentation --relevance supporting --rationale "Needed for campaign targeting"` -- topic name + relevance + rationale
-- `/dewey:curate propose Audience Segmentation --proposed-by "Jane"` -- topic name + proposed-by
-
-**Defaults** (apply when not provided):
-- Relevance → `core`
-- Proposed by → `agent`
-- Rationale → ask the user (this is the one field that should always be explicitly provided)
-
-For any required field not provided in `$ARGUMENTS` and not covered by a default, ask the user.
+- **Topic name** — from the user's free-text input
+- **Relevance** — default to `core` unless specified
+- **Proposed by** — default to `agent` unless specified
+- **Rationale** — if not clear from context, ask the user: "Why should this topic be in the knowledge base?"
 
 ## Step 2: Check for knowledge base overlap
 
