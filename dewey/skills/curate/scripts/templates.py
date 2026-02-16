@@ -265,6 +265,9 @@ def render_topic_md(topic_name: str, relevance: str) -> str:
         "",
         f"- [{topic_name} Reference]({slug}.ref.md) -- quick-lookup version",
         "- [Source Title](url) -- primary source for full treatment",
+        "",
+        "## Source Evaluation",
+        "<!-- Complete during research step: source scoring table and provenance block -->",
     ]
 
     return fm + "\n\n" + "\n".join(body_lines) + "\n"
