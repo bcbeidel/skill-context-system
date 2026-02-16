@@ -32,8 +32,10 @@ from tier2_triggers import (
 from auto_fix import fix_curation_plan_checkmarks, fix_missing_cross_links, fix_missing_sections
 from cross_validators import (
     check_curation_plan_sync,
+    check_duplicate_content,
     check_link_graph,
     check_manifest_sync,
+    check_naming_conventions,
     check_proposal_integrity,
 )
 from utilization import read_utilization
@@ -46,6 +48,7 @@ from validators import (
     check_heading_hierarchy,
     check_index_sync,
     check_inventory_regression,
+    check_readability,
     check_ref_see_also,
     check_section_completeness,
     check_section_ordering,
@@ -123,6 +126,7 @@ def run_health_check(
         all_issues.extend(check_heading_hierarchy(md_file))
         all_issues.extend(check_go_deeper_links(md_file))
         all_issues.extend(check_ref_see_also(md_file))
+        all_issues.extend(check_readability(md_file))
 
     # Structural validators (run once)
     all_issues.extend(check_coverage(kb_root, knowledge_dir_name=knowledge_dir_name))
@@ -134,6 +138,8 @@ def run_health_check(
     all_issues.extend(check_curation_plan_sync(kb_root, knowledge_dir_name=knowledge_dir_name))
     all_issues.extend(check_proposal_integrity(kb_root, knowledge_dir_name=knowledge_dir_name))
     all_issues.extend(check_link_graph(kb_root, knowledge_dir_name=knowledge_dir_name))
+    all_issues.extend(check_duplicate_content(kb_root, knowledge_dir_name=knowledge_dir_name))
+    all_issues.extend(check_naming_conventions(kb_root, knowledge_dir_name=knowledge_dir_name))
 
     # Build summary
     files_with_fails = set()

@@ -856,5 +856,101 @@ class TestCrossValidatorSkip(unittest.TestCase):
         self.assertEqual(fails, [], f"Unexpected failures: {fails}")
 
 
+class TestReadabilityIntegration(unittest.TestCase):
+    """Verify readability fires through run_health_check pipeline."""
+
+    def setUp(self):
+        self.tmpdir = Path(tempfile.mkdtemp())
+        self.kb = self.tmpdir / "docs"
+        self.kb.mkdir()
+
+    def tearDown(self):
+        shutil.rmtree(self.tmpdir)
+
+    def test_readability_fires_in_pipeline(self):
+        """Very complex prose in a working file -> readability warn through pipeline."""
+        area = self.kb / "area"
+        area.mkdir()
+        _write(area / "overview.md", _valid_md("overview"))
+        today = date.today().isoformat()
+        complex_prose = (
+            "The implementation of sophisticated interdisciplinary methodologies "
+            "necessitates comprehensive understanding of organizational infrastructure. "
+            "Psychopharmacological interventions demonstrate considerable efficacy "
+            "in ameliorating neuropsychiatric symptomatology. "
+            "The conceptualization of multidimensional representational frameworks "
+            "requires extraordinary phenomenological investigation. "
+            "Telecommunications infrastructure modernization presupposes "
+            "substantial capital expenditure authorization. "
+        )
+        doc = (
+            f"---\nsources:\n  - https://example.com/doc\n"
+            f"last_validated: {today}\nrelevance: core\ndepth: working\n---\n\n"
+            f"# Topic\n\n"
+            f"## Why This Matters\n{complex_prose}\n\n"
+            f"## In Practice\n{complex_prose}\n\n"
+            f"## Key Guidance\n{complex_prose}\n\n"
+            f"## Watch Out For\nPitfalls.\n\n"
+            f"## Go Deeper\n"
+            f"- [topic Reference](topic.ref.md) -- quick-lookup\n"
+            f"- [External](https://example.com/resource)\n"
+        )
+        _write(area / "topic.md", doc)
+        _write(area / "topic.ref.md", _valid_md("reference"))
+        result = run_health_check(self.tmpdir)
+        readability_issues = [
+            i for i in result["issues"]
+            if "readability" in i.get("message", "").lower()
+        ]
+        self.assertTrue(len(readability_issues) > 0)
+
+
+class TestNamingConventionsIntegration(unittest.TestCase):
+    """Verify naming conventions fires through run_health_check pipeline."""
+
+    def setUp(self):
+        self.tmpdir = Path(tempfile.mkdtemp())
+        self.kb = self.tmpdir / "docs"
+        self.kb.mkdir()
+
+    def tearDown(self):
+        shutil.rmtree(self.tmpdir)
+
+    def test_naming_conventions_fires_in_pipeline(self):
+        """Uppercase directory name -> naming warn through pipeline."""
+        area = self.kb / "Bad_Name"
+        area.mkdir()
+        _write(area / "overview.md", _valid_md("overview"))
+        result = run_health_check(self.tmpdir)
+        naming_issues = [
+            i for i in result["issues"]
+            if "naming conventions" in i.get("message", "").lower()
+        ]
+        self.assertTrue(len(naming_issues) > 0)
+
+
+class TestCleanKbStillPasses(unittest.TestCase):
+    """Ensure new validators don't break clean KB."""
+
+    def setUp(self):
+        self.tmpdir = Path(tempfile.mkdtemp())
+        self.kb = self.tmpdir / "docs"
+        self.kb.mkdir()
+
+    def tearDown(self):
+        shutil.rmtree(self.tmpdir)
+
+    def test_clean_kb_no_fails_with_new_validators(self):
+        """A valid KB produces zero fail-severity issues with all new validators active."""
+        area = self.kb / "area-one"
+        area.mkdir()
+        _write(area / "overview.md", _valid_md("overview"))
+        _write(area / "topic.md", _valid_md("working"))
+        _write(area / "topic.ref.md", _valid_md("reference"))
+        result = run_health_check(self.tmpdir)
+        fails = [i for i in result["issues"] if i["severity"] == "fail"]
+        self.assertEqual(fails, [], f"Unexpected failures: {fails}")
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -12,6 +12,7 @@ Only stdlib is used.
 
 from __future__ import annotations
 
+import hashlib
 import re
 import sys
 from datetime import date
@@ -31,7 +32,12 @@ _scripts_dir = str(Path(__file__).resolve().parent)
 if _scripts_dir not in sys.path:
     sys.path.insert(0, _scripts_dir)
 
-from validators import _WORKING_SECTIONS, _body_without_frontmatter, parse_frontmatter
+from validators import (
+    _WORKING_SECTIONS,
+    _body_without_frontmatter,
+    _strip_fenced_code_blocks,
+    parse_frontmatter,
+)
 
 
 # ------------------------------------------------------------------
@@ -563,6 +569,192 @@ def check_link_graph(kb_root: Path, *, knowledge_dir_name: str = "docs") -> list
                 issues.append({
                     "file": str(overview),
                     "message": f"Topic '{topic_name}' not listed in overview's How It's Organized section",
+                    "severity": "warn",
+                })
+
+    return issues
+
+
+# ------------------------------------------------------------------
+# Duplicate content detection
+# ------------------------------------------------------------------
+
+def _extract_paragraphs(text: str) -> list[str]:
+    """Split on double newlines, strip whitespace, filter to 40+ chars."""
+    paragraphs = re.split(r"\n\s*\n", text)
+    return [p.strip() for p in paragraphs if len(p.strip()) >= 40]
+
+
+def _word_shingles(text: str, n: int = 5) -> set[tuple]:
+    """Create n-gram tuples as sliding window over words."""
+    words = re.findall(r"[a-z]+", text.lower())
+    if len(words) < n:
+        return set()
+    return {tuple(words[i:i + n]) for i in range(len(words) - n + 1)}
+
+
+def _jaccard(a: set, b: set) -> float:
+    """Jaccard similarity: |a & b| / |a | b|."""
+    union = a | b
+    if not union:
+        return 0.0
+    return len(a & b) / len(union)
+
+
+def _is_companion_pair(path_a: Path, path_b: Path) -> bool:
+    """Check if two paths are a working/ref companion pair in the same dir."""
+    if path_a.parent != path_b.parent:
+        return False
+    a_name, b_name = path_a.name, path_b.name
+    # Check <stem>.md vs <stem>.ref.md
+    if a_name.endswith(".ref.md"):
+        return b_name == a_name[: -len(".ref.md")] + ".md"
+    if b_name.endswith(".ref.md"):
+        return a_name == b_name[: -len(".ref.md")] + ".md"
+    return False
+
+
+def check_duplicate_content(
+    kb_root: Path,
+    *,
+    knowledge_dir_name: str = "docs",
+    similarity_threshold: float = 0.4,
+) -> list[dict]:
+    """Detect duplicate paragraphs and high similarity between files."""
+    issues: list[dict] = []
+    knowledge_dir = kb_root / knowledge_dir_name
+
+    if not knowledge_dir.is_dir():
+        return issues
+
+    # Collect all .md files (areas + overviews)
+    all_files: list[Path] = []
+    for child in sorted(knowledge_dir.iterdir()):
+        if not child.is_dir():
+            continue
+        if child.name.startswith("_") or child.name.startswith("."):
+            continue
+        for md_file in sorted(child.glob("*.md")):
+            if md_file.name == "index.md":
+                continue
+            all_files.append(md_file)
+
+    if len(all_files) < 2:
+        return issues
+
+    # Read and process each file
+    file_data: dict[Path, dict] = {}
+    for f in all_files:
+        text = f.read_text()
+        body = _body_without_frontmatter(text)
+        body = _strip_fenced_code_blocks(body)
+        paragraphs = _extract_paragraphs(body)
+        shingles = _word_shingles(body)
+        file_data[f] = {
+            "paragraphs": paragraphs,
+            "shingles": shingles,
+        }
+
+    # Pass 1 — exact paragraph duplicates
+    para_hash_map: dict[str, list[Path]] = {}
+    for f, data in file_data.items():
+        for para in data["paragraphs"]:
+            h = hashlib.md5(para.encode()).hexdigest()
+            if h not in para_hash_map:
+                para_hash_map[h] = []
+            para_hash_map[h].append(f)
+
+    reported_para_pairs: set[tuple] = set()
+    for h, files in para_hash_map.items():
+        unique_files = sorted(set(files), key=lambda p: str(p))
+        if len(unique_files) < 2:
+            continue
+        for i in range(len(unique_files)):
+            for j in range(i + 1, len(unique_files)):
+                pair = (str(unique_files[i]), str(unique_files[j]))
+                if pair not in reported_para_pairs:
+                    reported_para_pairs.add(pair)
+                    rel_a = str(unique_files[i].relative_to(knowledge_dir))
+                    rel_b = str(unique_files[j].relative_to(knowledge_dir))
+                    issues.append({
+                        "file": str(unique_files[i]),
+                        "message": f"Exact duplicate paragraph found in {rel_a} and {rel_b}",
+                        "severity": "warn",
+                    })
+
+    # Pass 2 — cross-file Jaccard similarity
+    for i in range(len(all_files)):
+        for j in range(i + 1, len(all_files)):
+            a, b = all_files[i], all_files[j]
+            if _is_companion_pair(a, b):
+                continue
+            shingles_a = file_data[a]["shingles"]
+            shingles_b = file_data[b]["shingles"]
+            if not shingles_a or not shingles_b:
+                continue
+            sim = _jaccard(shingles_a, shingles_b)
+            if sim > similarity_threshold:
+                rel_a = str(a.relative_to(knowledge_dir))
+                rel_b = str(b.relative_to(knowledge_dir))
+                issues.append({
+                    "file": str(a),
+                    "message": (
+                        f"High similarity ({sim:.0%}) between {rel_a} and {rel_b}"
+                        " — consider deduplicating"
+                    ),
+                    "severity": "warn",
+                })
+
+    return issues
+
+
+# ------------------------------------------------------------------
+# Naming conventions
+# ------------------------------------------------------------------
+
+def check_naming_conventions(
+    kb_root: Path,
+    *,
+    knowledge_dir_name: str = "docs",
+) -> list[dict]:
+    """Check that file and directory names follow slug conventions."""
+    issues: list[dict] = []
+    knowledge_dir = kb_root / knowledge_dir_name
+
+    if not knowledge_dir.is_dir():
+        return issues
+
+    exempt_filenames = {"overview.md", "index.md"}
+
+    for child in sorted(knowledge_dir.iterdir()):
+        if not child.is_dir():
+            continue
+        if child.name.startswith("_") or child.name.startswith("."):
+            continue
+
+        # Check area directory name
+        if child.name != _slugify(child.name):
+            issues.append({
+                "file": str(child),
+                "message": f"Area directory '{child.name}' doesn't follow naming conventions — expected '{_slugify(child.name)}'",
+                "severity": "warn",
+            })
+
+        # Check files within area
+        for md_file in sorted(child.glob("*.md")):
+            if md_file.name in exempt_filenames:
+                continue
+
+            # For .ref.md files, check the stem before .ref.md
+            if md_file.name.endswith(".ref.md"):
+                stem = md_file.name[: -len(".ref.md")]
+            else:
+                stem = md_file.stem
+
+            if stem != _slugify(stem):
+                issues.append({
+                    "file": str(md_file),
+                    "message": f"Filename '{md_file.name}' doesn't follow naming conventions — expected '{_slugify(stem)}'",
                     "severity": "warn",
                 })
 

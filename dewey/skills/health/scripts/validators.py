@@ -9,6 +9,7 @@ Only stdlib is used.  No network requests are made (that belongs in Tier 2).
 
 from __future__ import annotations
 
+import hashlib
 import re
 from datetime import date
 from pathlib import Path
@@ -613,6 +614,115 @@ def check_ref_see_also(file_path: Path) -> list[dict]:
         issues.append({
             "file": name,
             "message": f"See also section missing link to companion {companion}",
+            "severity": "warn",
+        })
+
+    return issues
+
+
+# ------------------------------------------------------------------
+# Readability validator
+# ------------------------------------------------------------------
+
+_FK_GRADE_BOUNDS: dict[str, tuple[int, int]] = {
+    "overview": (8, 14),
+    "working": (10, 16),
+}
+
+
+def _count_syllables(word: str) -> int:
+    """Count syllables via vowel-group heuristic.
+
+    Strip trailing 'e', count contiguous vowel sequences ``[aeiouy]+``,
+    minimum 1 syllable per word.
+    """
+    w = word.lower().strip()
+    if not w:
+        return 1
+    # Strip trailing 'e' (silent e)
+    if len(w) > 2 and w.endswith("e"):
+        w = w[:-1]
+    count = len(re.findall(r"[aeiouy]+", w))
+    return max(count, 1)
+
+
+def _strip_markdown_formatting(text: str) -> str:
+    """Remove markdown inline formatting, keeping plain text.
+
+    Handles images, links, bold, italic, and inline code.
+    """
+    # Images: ![alt](url) -> ''
+    text = re.sub(r"!\[[^\]]*\]\([^)]+\)", "", text)
+    # Links: [text](url) -> text
+    text = re.sub(r"\[([^\]]*)\]\([^)]+\)", r"\1", text)
+    # Bold: **text** or __text__ -> text
+    text = re.sub(r"\*\*(.+?)\*\*", r"\1", text)
+    text = re.sub(r"__(.+?)__", r"\1", text)
+    # Italic: *text* or _text_ -> text
+    text = re.sub(r"\*(.+?)\*", r"\1", text)
+    text = re.sub(r"(?<!\w)_(.+?)_(?!\w)", r"\1", text)
+    # Inline code: `code` -> code
+    text = re.sub(r"`([^`]+)`", r"\1", text)
+    return text
+
+
+def _flesch_kincaid_grade(text: str) -> float | None:
+    """Compute Flesch-Kincaid grade level.
+
+    Returns None if fewer than 3 sentences (too little text to score).
+    """
+    # Split into sentences on . ! ?
+    sentences = re.split(r"[.!?]+", text)
+    sentences = [s.strip() for s in sentences if s.strip()]
+    if len(sentences) < 3:
+        return None
+
+    words: list[str] = []
+    for sentence in sentences:
+        words.extend(re.findall(r"[a-zA-Z]+", sentence))
+
+    if not words:
+        return None
+
+    total_syllables = sum(_count_syllables(w) for w in words)
+    num_words = len(words)
+    num_sentences = len(sentences)
+
+    grade = 0.39 * (num_words / num_sentences) + 11.8 * (total_syllables / num_words) - 15.59
+    return grade
+
+
+def check_readability(file_path: Path) -> list[dict]:
+    """Check Flesch-Kincaid grade level is within bounds for the content depth."""
+    issues: list[dict] = []
+    name = str(file_path)
+    fm = parse_frontmatter(file_path)
+    depth = fm.get("depth")
+
+    # Skip reference files (terse by design)
+    if depth not in _FK_GRADE_BOUNDS:
+        return issues
+
+    text = file_path.read_text()
+    body = _body_without_frontmatter(text)
+    body = _strip_fenced_code_blocks(body)
+    body = _strip_markdown_formatting(body)
+
+    grade = _flesch_kincaid_grade(body)
+    if grade is None:
+        return issues
+
+    lo, hi = _FK_GRADE_BOUNDS[depth]
+    if grade < lo:
+        issues.append({
+            "file": name,
+            "message": f"Readability grade {grade:.1f} below {lo} for depth '{depth}' — may be too simplistic",
+            "severity": "warn",
+        })
+    elif grade > hi:
+        issues.append({
+            "file": name,
+            "message": f"Readability grade {grade:.1f} above {hi} for depth '{depth}' — may be too complex",
             "severity": "warn",
         })
 

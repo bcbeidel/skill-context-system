@@ -14,6 +14,7 @@ from validators import (
     check_go_deeper_links,
     check_heading_hierarchy,
     check_inventory_regression,
+    check_readability,
     check_ref_see_also,
     check_section_completeness,
     check_section_ordering,
@@ -764,6 +765,131 @@ class TestCheckRefSeeAlso(unittest.TestCase):
         doc = self._ref_fm() + "\n# Reference\n\n**See also:** [Ad Serving](ad-serving.md)\n"
         f = _write(self.tmpdir / "ad-serving.ref.md", doc)
         self.assertEqual(check_ref_see_also(f), [])
+
+
+# ------------------------------------------------------------------
+# check_readability
+# ------------------------------------------------------------------
+class TestCheckReadability(unittest.TestCase):
+    """Tests for check_readability validator."""
+
+    def setUp(self):
+        self.tmpdir = Path(tempfile.mkdtemp())
+        self.today = date.today().isoformat()
+
+    def tearDown(self):
+        shutil.rmtree(self.tmpdir)
+
+    def _fm(self, depth: str) -> str:
+        return (
+            f"---\nsources:\n  - https://x.com\nlast_validated: {self.today}\n"
+            f"relevance: core\ndepth: {depth}\n---\n"
+        )
+
+    def _prose(self, grade_target: str = "normal") -> str:
+        """Generate prose at roughly the target readability level."""
+        if grade_target == "simple":
+            # Very short, simple sentences — should score below grade 8
+            return (
+                "The cat sat on a mat. The dog ran in the sun. "
+                "It was a big day. The boy ate his food. "
+                "She ran to the door. He sat on the bed. "
+                "They went to the park. We had a good time. "
+                "The sun was up high. The bird sang a song. "
+            )
+        elif grade_target == "complex":
+            # Long sentences with multisyllabic words
+            return (
+                "The implementation of sophisticated interdisciplinary methodologies "
+                "necessitates comprehensive understanding of organizational infrastructure. "
+                "Psychopharmacological interventions demonstrate considerable efficacy "
+                "in ameliorating neuropsychiatric symptomatology. "
+                "The conceptualization of multidimensional representational frameworks "
+                "requires extraordinary phenomenological investigation. "
+                "Telecommunications infrastructure modernization presupposes "
+                "substantial capital expenditure authorization. "
+            )
+        else:
+            # Mid-range prose — should land in the 10-14 range
+            return (
+                "Understanding how systems work requires careful observation and analysis. "
+                "The primary challenge in modern software development is managing complexity. "
+                "Teams that communicate effectively tend to produce better outcomes over time. "
+                "Documentation serves as a bridge between current knowledge and future reference. "
+                "Clear writing reflects clear thinking and benefits everyone involved. "
+            )
+
+    def test_working_normal_prose_no_issues(self):
+        doc = self._fm("working") + "\n# Topic\n\n" + self._prose("normal")
+        f = _write(self.tmpdir / "a.md", doc)
+        issues = check_readability(f)
+        self.assertEqual(issues, [])
+
+    def test_overview_normal_prose_no_issues(self):
+        # Overview bounds are 8-14; balance sentence length (~15 words) and
+        # moderate vocabulary to target FK grade ~10
+        prose = (
+            "The system processes incoming requests and routes them to the nearest available worker node. "
+            "Each worker keeps a local cache that stores the most frequently accessed data on disk. "
+            "When a request fails on the first attempt, the system retries it with a different worker. "
+            "Health checks run every thirty seconds so that problems are detected before users notice them. "
+        )
+        doc = self._fm("overview") + "\n# Overview\n\n" + prose
+        f = _write(self.tmpdir / "a.md", doc)
+        issues = check_readability(f)
+        self.assertEqual(issues, [])
+
+    def test_reference_skipped(self):
+        doc = self._fm("reference") + "\n# Reference\n\n" + self._prose("complex")
+        f = _write(self.tmpdir / "a.md", doc)
+        issues = check_readability(f)
+        self.assertEqual(issues, [])
+
+    def test_complex_prose_warns(self):
+        doc = self._fm("working") + "\n# Topic\n\n" + self._prose("complex")
+        f = _write(self.tmpdir / "a.md", doc)
+        issues = check_readability(f)
+        self.assertTrue(len(issues) > 0)
+        self.assertTrue(any("complex" in i["message"].lower() for i in issues))
+
+    def test_simple_prose_warns_for_overview(self):
+        doc = self._fm("overview") + "\n# Overview\n\n" + self._prose("simple")
+        f = _write(self.tmpdir / "a.md", doc)
+        issues = check_readability(f)
+        self.assertTrue(len(issues) > 0)
+        self.assertTrue(any("simplistic" in i["message"].lower() for i in issues))
+
+    def test_too_few_sentences_skipped(self):
+        doc = self._fm("working") + "\n# Topic\n\nJust one sentence here.\n"
+        f = _write(self.tmpdir / "a.md", doc)
+        issues = check_readability(f)
+        self.assertEqual(issues, [])
+
+    def test_code_blocks_excluded(self):
+        code_block = "```python\nfor i in range(100):\n    print(i)\n```\n"
+        doc = self._fm("working") + "\n# Topic\n\n" + code_block + self._prose("normal")
+        f = _write(self.tmpdir / "a.md", doc)
+        issues = check_readability(f)
+        self.assertEqual(issues, [])
+
+    def test_markdown_formatting_stripped(self):
+        formatted = (
+            "Understanding **how systems** work requires [careful](https://x.com) observation. "
+            "The *primary* challenge in `modern` software development is managing complexity. "
+            "Teams that communicate effectively tend to produce better outcomes over time. "
+            "Documentation serves as a bridge between current knowledge and future reference. "
+            "Clear writing reflects clear thinking and benefits everyone involved. "
+        )
+        doc = self._fm("working") + "\n# Topic\n\n" + formatted
+        f = _write(self.tmpdir / "a.md", doc)
+        issues = check_readability(f)
+        self.assertEqual(issues, [])
+
+    def test_severity_is_warn(self):
+        doc = self._fm("working") + "\n# Topic\n\n" + self._prose("complex")
+        f = _write(self.tmpdir / "a.md", doc)
+        issues = check_readability(f)
+        self.assertTrue(all(i["severity"] == "warn" for i in issues))
 
 
 if __name__ == "__main__":

@@ -8,8 +8,10 @@ from pathlib import Path
 
 from cross_validators import (
     check_curation_plan_sync,
+    check_duplicate_content,
     check_link_graph,
     check_manifest_sync,
+    check_naming_conventions,
     check_proposal_integrity,
 )
 from templates import MARKER_BEGIN, MARKER_END
@@ -544,6 +546,174 @@ class TestCheckLinkGraph(unittest.TestCase):
         """Empty knowledge directory -> no issues."""
         issues = check_link_graph(self.tmpdir, knowledge_dir_name="docs")
         self.assertEqual(issues, [])
+
+
+# ------------------------------------------------------------------
+# TestCheckDuplicateContent
+# ------------------------------------------------------------------
+class TestCheckDuplicateContent(unittest.TestCase):
+
+    def setUp(self):
+        self.tmpdir = Path(tempfile.mkdtemp())
+        self.kb = self.tmpdir / "docs"
+        self.kb.mkdir()
+
+    def tearDown(self):
+        shutil.rmtree(self.tmpdir)
+
+    def test_no_duplicates_no_issues(self):
+        """Unique content across files -> no issues."""
+        area = self.kb / "area-one"
+        area.mkdir()
+        _write(area / "overview.md", _valid_fm("overview") + "\n# Area\n\n"
+               + "This is a unique paragraph about the overview topic with enough words to count.\n")
+        _write(area / "topic.md", _valid_fm("working") + "\n# Topic\n\n"
+               + "This is a completely different paragraph about a separate working topic here.\n")
+        issues = check_duplicate_content(self.tmpdir, knowledge_dir_name="docs")
+        self.assertEqual(issues, [])
+
+    def test_exact_duplicate_paragraph_warns(self):
+        """Same paragraph in two files -> warn."""
+        area = self.kb / "area-one"
+        area.mkdir()
+        shared_para = "This is a substantial paragraph that appears in both files and should be detected as a duplicate by the validator."
+        _write(area / "overview.md", _valid_fm("overview") + f"\n# Area\n\n{shared_para}\n")
+        _write(area / "topic.md", _valid_fm("working") + f"\n# Topic\n\n{shared_para}\n")
+        issues = check_duplicate_content(self.tmpdir, knowledge_dir_name="docs")
+        dup_issues = [i for i in issues if "duplicate paragraph" in i["message"].lower()]
+        self.assertTrue(len(dup_issues) > 0)
+
+    def test_companion_pair_no_similarity_warning(self):
+        """Working/ref companion pair -> skip similarity check."""
+        area = self.kb / "area-one"
+        area.mkdir()
+        _write(area / "overview.md", _valid_fm("overview") + "\n# Area\n\nUnique overview content here with enough words.\n")
+        shared = (
+            "This topic covers important aspects of the domain area including "
+            "detailed guidance on implementation patterns and best practices "
+            "for working with the system effectively in production."
+        )
+        _write(area / "topic.md", _valid_fm("working") + f"\n# Topic\n\n{shared}\n")
+        _write(area / "topic.ref.md", _valid_fm("reference") + f"\n# Ref\n\n{shared}\n")
+        issues = check_duplicate_content(self.tmpdir, knowledge_dir_name="docs")
+        sim_issues = [i for i in issues if "similarity" in i["message"].lower()
+                      and "topic.md" in i["message"] and "topic.ref.md" in i["message"]]
+        self.assertEqual(sim_issues, [])
+
+    def test_high_similarity_non_companion_warns(self):
+        """High Jaccard similarity between non-companion files -> warn."""
+        area = self.kb / "area-one"
+        area.mkdir()
+        _write(area / "overview.md", _valid_fm("overview") + "\n# Area\n\nOverview content standalone.\n")
+        # Two very similar non-companion files
+        content = (
+            "The comprehensive implementation methodology requires understanding "
+            "of fundamental architectural principles and systematic application "
+            "of established engineering practices across the development lifecycle. "
+            "Performance optimization strategies involve careful analysis of "
+            "bottlenecks and systematic improvement of critical code paths."
+        )
+        _write(area / "topic-a.md", _valid_fm("working") + f"\n# Topic A\n\n{content}\n")
+        _write(area / "topic-b.md", _valid_fm("working") + f"\n# Topic B\n\n{content}\n")
+        issues = check_duplicate_content(self.tmpdir, knowledge_dir_name="docs")
+        sim_issues = [i for i in issues if "similarity" in i["message"].lower()]
+        self.assertTrue(len(sim_issues) > 0)
+
+    def test_short_paragraphs_ignored(self):
+        """Paragraphs under 40 chars are not checked for duplicates."""
+        area = self.kb / "area-one"
+        area.mkdir()
+        _write(area / "overview.md", _valid_fm("overview") + "\n# Area\n\nShort.\n")
+        _write(area / "topic.md", _valid_fm("working") + "\n# Topic\n\nShort.\n")
+        issues = check_duplicate_content(self.tmpdir, knowledge_dir_name="docs")
+        dup_issues = [i for i in issues if "duplicate paragraph" in i["message"].lower()]
+        self.assertEqual(dup_issues, [])
+
+    def test_code_blocks_excluded(self):
+        """Code blocks should be stripped before comparison."""
+        area = self.kb / "area-one"
+        area.mkdir()
+        code = "```python\nfor i in range(100):\n    print(i)\n```\n"
+        overview_text = (
+            "The architecture overview covers system design principles and high-level "
+            "component interaction patterns used in production deployment environments. "
+            "This section explains monitoring strategies and alert configuration rules."
+        )
+        topic_text = (
+            "Database migration workflows require careful version control and staged "
+            "rollout procedures to prevent data loss during schema transformation. "
+            "Backup verification steps must be completed before any production change."
+        )
+        _write(area / "overview.md", _valid_fm("overview") + f"\n# Area\n\n{code}\n{overview_text}\n")
+        _write(area / "topic.md", _valid_fm("working") + f"\n# Topic\n\n{code}\n{topic_text}\n")
+        issues = check_duplicate_content(self.tmpdir, knowledge_dir_name="docs")
+        self.assertEqual(issues, [])
+
+    def test_empty_kb_no_issues(self):
+        """Empty knowledge directory -> no issues."""
+        issues = check_duplicate_content(self.tmpdir, knowledge_dir_name="docs")
+        self.assertEqual(issues, [])
+
+
+# ------------------------------------------------------------------
+# TestCheckNamingConventions
+# ------------------------------------------------------------------
+class TestCheckNamingConventions(unittest.TestCase):
+
+    def setUp(self):
+        self.tmpdir = Path(tempfile.mkdtemp())
+        self.kb = self.tmpdir / "docs"
+        self.kb.mkdir()
+
+    def tearDown(self):
+        shutil.rmtree(self.tmpdir)
+
+    def test_well_named_files_no_issues(self):
+        """Properly slugified names -> no issues."""
+        area = self.kb / "area-one"
+        area.mkdir()
+        _write(area / "overview.md", _valid_fm("overview") + "\n# Area\n")
+        _write(area / "my-topic.md", _valid_fm("working") + "\n# Topic\n")
+        _write(area / "my-topic.ref.md", _valid_fm("reference") + "\n# Ref\n")
+        issues = check_naming_conventions(self.tmpdir, knowledge_dir_name="docs")
+        self.assertEqual(issues, [])
+
+    def test_uppercase_directory_warns(self):
+        """Uppercase directory name -> warn."""
+        area = self.kb / "Area-One"
+        area.mkdir()
+        _write(area / "overview.md", _valid_fm("overview") + "\n# Area\n")
+        issues = check_naming_conventions(self.tmpdir, knowledge_dir_name="docs")
+        dir_issues = [i for i in issues if "directory" in i["message"].lower()]
+        self.assertTrue(len(dir_issues) > 0)
+
+    def test_underscore_in_filename_warns(self):
+        """Underscore in filename -> warn."""
+        area = self.kb / "area-one"
+        area.mkdir()
+        _write(area / "overview.md", _valid_fm("overview") + "\n# Area\n")
+        _write(area / "my_topic.md", _valid_fm("working") + "\n# Topic\n")
+        issues = check_naming_conventions(self.tmpdir, knowledge_dir_name="docs")
+        file_issues = [i for i in issues if "my_topic" in i["message"]]
+        self.assertTrue(len(file_issues) > 0)
+
+    def test_overview_and_index_exempt(self):
+        """overview.md and index.md are exempt from slug check."""
+        area = self.kb / "area-one"
+        area.mkdir()
+        _write(area / "overview.md", _valid_fm("overview") + "\n# Area\n")
+        _write(area / "index.md", "# Index\n")
+        issues = check_naming_conventions(self.tmpdir, knowledge_dir_name="docs")
+        self.assertEqual(issues, [])
+
+    def test_no_knowledge_dir_no_issues(self):
+        """Missing knowledge directory -> no issues."""
+        empty = Path(tempfile.mkdtemp())
+        try:
+            issues = check_naming_conventions(empty, knowledge_dir_name="docs")
+            self.assertEqual(issues, [])
+        finally:
+            shutil.rmtree(empty)
 
 
 if __name__ == "__main__":
