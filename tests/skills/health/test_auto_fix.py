@@ -196,8 +196,8 @@ class TestFixCurationPlanCheckmarks(unittest.TestCase):
 
     def setUp(self):
         self.tmpdir = Path(tempfile.mkdtemp())
-        self.kb = self.tmpdir / "docs"
-        self.kb.mkdir()
+        self.knowledge_base = self.tmpdir / "docs"
+        self.knowledge_base.mkdir()
 
     def tearDown(self):
         shutil.rmtree(self.tmpdir)
@@ -212,7 +212,7 @@ class TestFixCurationPlanCheckmarks(unittest.TestCase):
         """Unchecked item with file on disk -> checked off."""
         from auto_fix import fix_curation_plan_checkmarks
 
-        area = self.kb / "area-one"
+        area = self.knowledge_base / "area-one"
         area.mkdir()
         _write(area / "topic-a.md", "# Topic A\n")
 
@@ -232,7 +232,7 @@ class TestFixCurationPlanCheckmarks(unittest.TestCase):
         """Already checked item stays checked."""
         from auto_fix import fix_curation_plan_checkmarks
 
-        area = self.kb / "area-one"
+        area = self.knowledge_base / "area-one"
         area.mkdir()
         _write(area / "topic-a.md", "# Topic A\n")
 

@@ -57,7 +57,7 @@ def _read_topic_metadata(file_path: Path) -> dict:
     return {"name": name, "depth": depth}
 
 
-def _discover_index_data(kb_root: Path, knowledge_dir_name: str = "docs") -> list[dict]:
+def _discover_index_data(knowledge_base_root: Path, knowledge_dir_name: str = "docs") -> list[dict]:
     """Scan the knowledge directory for all area subdirectories and their topics.
 
     Returns a list of::
@@ -73,7 +73,7 @@ def _discover_index_data(kb_root: Path, knowledge_dir_name: str = "docs") -> lis
     - Areas sorted alphabetically by dirname
     - Topics sorted alphabetically by filename
     """
-    knowledge_path = kb_root / knowledge_dir_name
+    knowledge_path = knowledge_base_root / knowledge_dir_name
     if not knowledge_path.is_dir():
         return []
 
@@ -239,7 +239,7 @@ def merge_managed_section(
     )
 
 
-def scaffold_kb(
+def scaffold_knowledge_base(
     target_dir: Path,
     role_name: str,
     domain_areas: list[str] | None = None,
@@ -500,5 +500,5 @@ if __name__ == "__main__":
             else []
         )
         topics = json.loads(args.starter_topics) if args.starter_topics else None
-        result = scaffold_kb(Path(args.target), args.role, areas, topics, knowledge_dir=args.knowledge_dir)
+        result = scaffold_knowledge_base(Path(args.target), args.role, areas, topics, knowledge_dir=args.knowledge_dir)
         print(result)

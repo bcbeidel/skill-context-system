@@ -228,7 +228,7 @@ def check_section_ordering(file_path: Path) -> list[dict]:
     return issues
 
 
-def check_cross_references(file_path: Path, kb_root: Path) -> list[dict]:
+def check_cross_references(file_path: Path, knowledge_base_root: Path) -> list[dict]:
     """Check that internal markdown links point to existing files."""
     issues: list[dict] = []
     name = str(file_path)
@@ -285,10 +285,10 @@ def check_size_bounds(file_path: Path) -> list[dict]:
     return issues
 
 
-def check_coverage(kb_root: Path, *, knowledge_dir_name: str = "docs") -> list[dict]:
+def check_coverage(knowledge_base_root: Path, *, knowledge_dir_name: str = "docs") -> list[dict]:
     """Check structural coverage: overview.md per area, .ref.md per topic."""
     issues: list[dict] = []
-    knowledge_dir = kb_root / knowledge_dir_name
+    knowledge_dir = knowledge_base_root / knowledge_dir_name
 
     if not knowledge_dir.is_dir():
         return issues
@@ -385,7 +385,7 @@ def check_source_urls(file_path: Path) -> list[dict]:
     return issues
 
 
-def check_index_sync(kb_root: Path, *, knowledge_dir_name: str = "docs") -> list[dict]:
+def check_index_sync(knowledge_base_root: Path, *, knowledge_dir_name: str = "docs") -> list[dict]:
     """Check that index.md lists all topic files that exist on disk.
 
     Warns when:
@@ -393,7 +393,7 @@ def check_index_sync(kb_root: Path, *, knowledge_dir_name: str = "docs") -> list
     - A topic file exists on disk but is not referenced in index.md
     """
     issues: list[dict] = []
-    knowledge_dir = kb_root / knowledge_dir_name
+    knowledge_dir = knowledge_base_root / knowledge_dir_name
     index_path = knowledge_dir / "index.md"
 
     if not index_path.exists():
@@ -429,7 +429,7 @@ def check_index_sync(kb_root: Path, *, knowledge_dir_name: str = "docs") -> list
     return issues
 
 
-def check_inventory_regression(kb_root: Path, current_files: list[str]) -> list[dict]:
+def check_inventory_regression(knowledge_base_root: Path, current_files: list[str]) -> list[dict]:
     """Warn when files from the last health snapshot are missing.
 
     Compares *current_files* (relative paths like ``area/topic.md``)
@@ -440,7 +440,7 @@ def check_inventory_regression(kb_root: Path, current_files: list[str]) -> list[
     from history import read_history
 
     issues: list[dict] = []
-    history = read_history(kb_root, limit=1)
+    history = read_history(knowledge_base_root, limit=1)
     if not history:
         return issues
 

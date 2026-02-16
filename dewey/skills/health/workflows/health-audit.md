@@ -6,7 +6,7 @@ Run Tier 1 deterministic checks followed by Tier 2 LLM-assisted quality assessme
 ## Step 1: Run Tier 1 checks and Tier 2 pre-screening
 
 ```bash
-python3 ${CLAUDE_PLUGIN_ROOT}/skills/health/scripts/check_kb.py --kb-root <kb_root> --both
+python3 ${CLAUDE_PLUGIN_ROOT}/skills/health/scripts/check_kb.py --knowledge-base-root <knowledge_base_root> --both
 ```
 
 Capture the JSON output. It contains two top-level sections:
@@ -181,7 +181,7 @@ Write the combined Tier 2 assessment to `.dewey/health/tier2-report.json` so `he
 import json
 from pathlib import Path
 
-report_dir = Path("<kb_root>") / ".dewey" / "health"
+report_dir = Path("<knowledge_base_root>") / ".dewey" / "health"
 report_dir.mkdir(parents=True, exist_ok=True)
 (report_dir / "tier2-report.json").write_text(json.dumps(report, indent=2))
 ```
@@ -251,7 +251,7 @@ When fixing flagged items (either now or in a follow-up session), all new conten
 After making fixes, re-run the combined check to confirm improvements and detect regressions:
 
 ```bash
-python3 ${CLAUDE_PLUGIN_ROOT}/skills/health/scripts/check_kb.py --kb-root <kb_root> --both
+python3 ${CLAUDE_PLUGIN_ROOT}/skills/health/scripts/check_kb.py --knowledge-base-root <knowledge_base_root> --both
 ```
 
 Compare the results against the initial run from Step 1:

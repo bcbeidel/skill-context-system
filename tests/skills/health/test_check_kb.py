@@ -89,8 +89,8 @@ class TestRunHealthCheck(unittest.TestCase):
 
     def setUp(self):
         self.tmpdir = Path(tempfile.mkdtemp())
-        self.kb = self.tmpdir / "docs"
-        self.kb.mkdir()
+        self.knowledge_base = self.tmpdir / "docs"
+        self.knowledge_base.mkdir()
 
     def tearDown(self):
         shutil.rmtree(self.tmpdir)
@@ -100,7 +100,7 @@ class TestRunHealthCheck(unittest.TestCase):
     # ------------------------------------------------------------------
     def test_returns_structured_report(self):
         """Result has 'issues' and 'summary' keys."""
-        area = self.kb / "area-one"
+        area = self.knowledge_base / "area-one"
         area.mkdir()
         _write(area / "overview.md", _valid_md("overview"))
         result = run_health_check(self.tmpdir)
@@ -114,7 +114,7 @@ class TestRunHealthCheck(unittest.TestCase):
     # ------------------------------------------------------------------
     def test_reports_missing_overview(self):
         """Area without overview.md produces a fail-severity issue."""
-        area = self.kb / "area-one"
+        area = self.knowledge_base / "area-one"
         area.mkdir()
         _write(area / "topic.md", _valid_md("working"))
         result = run_health_check(self.tmpdir)
@@ -130,7 +130,7 @@ class TestRunHealthCheck(unittest.TestCase):
     # ------------------------------------------------------------------
     def test_clean_kb_has_no_failures(self):
         """A valid KB produces zero fail-severity issues."""
-        area = self.kb / "area-one"
+        area = self.knowledge_base / "area-one"
         area.mkdir()
         _write(area / "overview.md", _valid_md("overview"))
         _write(area / "topic.md", _valid_md("working"))
@@ -144,7 +144,7 @@ class TestRunHealthCheck(unittest.TestCase):
     # ------------------------------------------------------------------
     def test_summary_includes_counts(self):
         """Summary contains total_files, fail_count, warn_count, pass_count."""
-        area = self.kb / "area-one"
+        area = self.knowledge_base / "area-one"
         area.mkdir()
         _write(area / "overview.md", _valid_md("overview"))
         result = run_health_check(self.tmpdir)
@@ -158,7 +158,7 @@ class TestRunHealthCheck(unittest.TestCase):
     # ------------------------------------------------------------------
     def test_skips_proposals_per_file_validators(self):
         """Per-file validators skip _proposals/ (proposal integrity is separate)."""
-        proposals = self.kb / "_proposals"
+        proposals = self.knowledge_base / "_proposals"
         proposals.mkdir()
         _write(proposals / "draft.md", "# No frontmatter at all\n")
         result = run_health_check(self.tmpdir)
@@ -182,7 +182,7 @@ class TestRunHealthCheck(unittest.TestCase):
     # ------------------------------------------------------------------
     def test_total_files_count(self):
         """total_files accurately counts markdown files."""
-        area = self.kb / "area-one"
+        area = self.knowledge_base / "area-one"
         area.mkdir()
         _write(area / "overview.md", _valid_md("overview"))
         _write(area / "topic.md", _valid_md("working"))
@@ -195,15 +195,15 @@ class TestRunTier2Prescreening(unittest.TestCase):
 
     def setUp(self):
         self.tmpdir = Path(tempfile.mkdtemp())
-        self.kb = self.tmpdir / "docs"
-        self.kb.mkdir()
+        self.knowledge_base = self.tmpdir / "docs"
+        self.knowledge_base.mkdir()
 
     def tearDown(self):
         shutil.rmtree(self.tmpdir)
 
     def test_returns_structured_queue(self):
         """Result has 'queue' and 'summary' keys."""
-        area = self.kb / "area-one"
+        area = self.knowledge_base / "area-one"
         area.mkdir()
         _write(area / "overview.md", _valid_md("overview"))
         result = run_tier2_prescreening(self.tmpdir)
@@ -214,7 +214,7 @@ class TestRunTier2Prescreening(unittest.TestCase):
 
     def test_stale_file_produces_trigger(self):
         """A file with old last_validated should produce a source_drift trigger."""
-        area = self.kb / "area-one"
+        area = self.knowledge_base / "area-one"
         area.mkdir()
         stale_md = (
             "---\n"
@@ -236,7 +236,7 @@ class TestRunTier2Prescreening(unittest.TestCase):
 
     def test_summary_includes_counts(self):
         """Summary contains total_files_scanned, files_with_triggers, trigger_counts."""
-        area = self.kb / "area-one"
+        area = self.knowledge_base / "area-one"
         area.mkdir()
         _write(area / "overview.md", _valid_md("overview"))
         result = run_tier2_prescreening(self.tmpdir)
@@ -246,7 +246,7 @@ class TestRunTier2Prescreening(unittest.TestCase):
 
     def test_clean_file_no_triggers(self):
         """A well-formed file should produce no triggers."""
-        area = self.kb / "area-one"
+        area = self.knowledge_base / "area-one"
         area.mkdir()
         # Pad with enough words to satisfy Tier 2 depth_accuracy (min 50 for overview)
         extra = "\n".join([f"Additional content line {i} with words." for i in range(10)])
@@ -264,11 +264,11 @@ class TestTier2OutputSchema(unittest.TestCase):
 
     def setUp(self):
         self.tmpdir = Path(tempfile.mkdtemp())
-        self.kb = self.tmpdir / "docs"
-        self.kb.mkdir()
+        self.knowledge_base = self.tmpdir / "docs"
+        self.knowledge_base.mkdir()
 
         # Create test data that triggers multiple trigger types.
-        area = self.kb / "area-one"
+        area = self.knowledge_base / "area-one"
         area.mkdir()
 
         # A stale overview file — triggers source_drift (old last_validated)
@@ -384,9 +384,9 @@ class TestRunCombinedReport(unittest.TestCase):
 
     def setUp(self):
         self.tmpdir = Path(tempfile.mkdtemp())
-        self.kb = self.tmpdir / "docs"
-        self.kb.mkdir()
-        area = self.kb / "area-one"
+        self.knowledge_base = self.tmpdir / "docs"
+        self.knowledge_base.mkdir()
+        area = self.knowledge_base / "area-one"
         area.mkdir()
         _write(area / "overview.md", _valid_md("overview"))
         _write(area / "topic.md", _valid_md("working"))
@@ -429,15 +429,15 @@ class TestHistoryIntegration(unittest.TestCase):
 
     def setUp(self):
         self.tmpdir = Path(tempfile.mkdtemp())
-        self.kb = self.tmpdir / "docs"
-        self.kb.mkdir()
+        self.knowledge_base = self.tmpdir / "docs"
+        self.knowledge_base.mkdir()
 
     def tearDown(self):
         shutil.rmtree(self.tmpdir)
 
     def test_tier1_persists_snapshot(self):
         """run_health_check should persist a history snapshot."""
-        area = self.kb / "area-one"
+        area = self.knowledge_base / "area-one"
         area.mkdir()
         _write(area / "overview.md", _valid_md("overview"))
         run_health_check(self.tmpdir)
@@ -449,7 +449,7 @@ class TestHistoryIntegration(unittest.TestCase):
 
     def test_combined_persists_snapshot(self):
         """run_combined_report should persist a snapshot with both tiers."""
-        area = self.kb / "area-one"
+        area = self.knowledge_base / "area-one"
         area.mkdir()
         _write(area / "overview.md", _valid_md("overview"))
         run_combined_report(self.tmpdir)
@@ -461,7 +461,7 @@ class TestHistoryIntegration(unittest.TestCase):
 
     def test_tier2_persists_snapshot(self):
         """run_tier2_prescreening should persist a snapshot."""
-        area = self.kb / "area-one"
+        area = self.knowledge_base / "area-one"
         area.mkdir()
         _write(area / "overview.md", _valid_md("overview"))
         run_tier2_prescreening(self.tmpdir)
@@ -553,15 +553,15 @@ class TestInventoryIntegration(unittest.TestCase):
 
     def setUp(self):
         self.tmpdir = Path(tempfile.mkdtemp())
-        self.kb = self.tmpdir / "docs"
-        self.kb.mkdir()
+        self.knowledge_base = self.tmpdir / "docs"
+        self.knowledge_base.mkdir()
 
     def tearDown(self):
         shutil.rmtree(self.tmpdir)
 
     def test_file_list_recorded_in_snapshot(self):
         """run_health_check records discovered files in history snapshot."""
-        area = self.kb / "area"
+        area = self.knowledge_base / "area"
         area.mkdir()
         _write(area / "overview.md", _valid_md("overview"))
         _write(area / "topic.md", _valid_md("working"))
@@ -576,7 +576,7 @@ class TestInventoryIntegration(unittest.TestCase):
 
     def test_missing_file_detected_on_second_run(self):
         """Second health check detects file removed since first run."""
-        area = self.kb / "area"
+        area = self.knowledge_base / "area"
         area.mkdir()
         _write(area / "overview.md", _valid_md("overview"))
         topic = _write(area / "topic.md", _valid_md("working"))
@@ -598,7 +598,7 @@ class TestInventoryIntegration(unittest.TestCase):
 
     def test_combined_report_records_file_list(self):
         """run_combined_report also records file_list in snapshot."""
-        area = self.kb / "area"
+        area = self.knowledge_base / "area"
         area.mkdir()
         _write(area / "overview.md", _valid_md("overview"))
         run_combined_report(self.tmpdir)
@@ -613,15 +613,15 @@ class TestCitationQualityIntegration(unittest.TestCase):
 
     def setUp(self):
         self.tmpdir = Path(tempfile.mkdtemp())
-        self.kb = self.tmpdir / "docs"
-        self.kb.mkdir()
+        self.knowledge_base = self.tmpdir / "docs"
+        self.knowledge_base.mkdir()
 
     def tearDown(self):
         shutil.rmtree(self.tmpdir)
 
     def test_duplicate_citations_appear_in_queue(self):
         """File with repeated inline citations produces a citation_quality trigger."""
-        area = self.kb / "area"
+        area = self.knowledge_base / "area"
         area.mkdir()
         _write(area / "overview.md", _valid_md("overview"))
         # Build a working doc with duplicate citations inside Key Guidance
@@ -654,15 +654,15 @@ class TestNewValidatorsIntegration(unittest.TestCase):
 
     def setUp(self):
         self.tmpdir = Path(tempfile.mkdtemp())
-        self.kb = self.tmpdir / "docs"
-        self.kb.mkdir()
+        self.knowledge_base = self.tmpdir / "docs"
+        self.knowledge_base.mkdir()
 
     def tearDown(self):
         shutil.rmtree(self.tmpdir)
 
     def test_section_completeness_fires(self):
         """Working file missing sections produces warnings through pipeline."""
-        area = self.kb / "area"
+        area = self.knowledge_base / "area"
         area.mkdir()
         _write(area / "overview.md", _valid_md("overview"))
         today = date.today().isoformat()
@@ -684,7 +684,7 @@ class TestNewValidatorsIntegration(unittest.TestCase):
 
     def test_heading_hierarchy_fires(self):
         """File with heading issues produces warnings through pipeline."""
-        area = self.kb / "area"
+        area = self.knowledge_base / "area"
         area.mkdir()
         _write(area / "overview.md", _valid_md("overview"))
         today = date.today().isoformat()
@@ -709,15 +709,15 @@ class TestAutoFixIntegration(unittest.TestCase):
 
     def setUp(self):
         self.tmpdir = Path(tempfile.mkdtemp())
-        self.kb = self.tmpdir / "docs"
-        self.kb.mkdir()
+        self.knowledge_base = self.tmpdir / "docs"
+        self.knowledge_base.mkdir()
 
     def tearDown(self):
         shutil.rmtree(self.tmpdir)
 
     def _make_incomplete_kb(self):
         """Create a KB with a working file missing sections."""
-        area = self.kb / "area"
+        area = self.knowledge_base / "area"
         area.mkdir()
         _write(area / "overview.md", _valid_md("overview"))
         today = date.today().isoformat()
@@ -768,8 +768,8 @@ class TestManifestSyncIntegration(unittest.TestCase):
 
     def setUp(self):
         self.tmpdir = Path(tempfile.mkdtemp())
-        self.kb = self.tmpdir / "docs"
-        self.kb.mkdir()
+        self.knowledge_base = self.tmpdir / "docs"
+        self.knowledge_base.mkdir()
 
     def tearDown(self):
         shutil.rmtree(self.tmpdir)
@@ -778,7 +778,7 @@ class TestManifestSyncIntegration(unittest.TestCase):
         """AGENTS.md referencing nonexistent file -> warn through pipeline."""
         from templates import MARKER_BEGIN, MARKER_END
 
-        area = self.kb / "area-one"
+        area = self.knowledge_base / "area-one"
         area.mkdir()
         _write(area / "overview.md", _valid_md("overview"))
 
@@ -807,15 +807,15 @@ class TestPlanFixIntegration(unittest.TestCase):
 
     def setUp(self):
         self.tmpdir = Path(tempfile.mkdtemp())
-        self.kb = self.tmpdir / "docs"
-        self.kb.mkdir()
+        self.knowledge_base = self.tmpdir / "docs"
+        self.knowledge_base.mkdir()
 
     def tearDown(self):
         shutil.rmtree(self.tmpdir)
 
     def test_plan_fix_with_fix_flag(self):
         """fix=True checks off plan items with existing files."""
-        area = self.kb / "area-one"
+        area = self.knowledge_base / "area-one"
         area.mkdir()
         _write(area / "overview.md", _valid_md("overview"))
         _write(area / "topic-a.md", _valid_md("working", stem="topic-a"))
@@ -841,15 +841,15 @@ class TestCrossValidatorSkip(unittest.TestCase):
 
     def setUp(self):
         self.tmpdir = Path(tempfile.mkdtemp())
-        self.kb = self.tmpdir / "docs"
-        self.kb.mkdir()
+        self.knowledge_base = self.tmpdir / "docs"
+        self.knowledge_base.mkdir()
 
     def tearDown(self):
         shutil.rmtree(self.tmpdir)
 
     def test_clean_kb_still_passes_without_manifests(self):
         """Clean KB with no AGENTS.md/CLAUDE.md/plan still has zero fails."""
-        area = self.kb / "area-one"
+        area = self.knowledge_base / "area-one"
         area.mkdir()
         _write(area / "overview.md", _valid_md("overview"))
         _write(area / "topic.md", _valid_md("working"))
@@ -864,15 +864,15 @@ class TestReadabilityIntegration(unittest.TestCase):
 
     def setUp(self):
         self.tmpdir = Path(tempfile.mkdtemp())
-        self.kb = self.tmpdir / "docs"
-        self.kb.mkdir()
+        self.knowledge_base = self.tmpdir / "docs"
+        self.knowledge_base.mkdir()
 
     def tearDown(self):
         shutil.rmtree(self.tmpdir)
 
     def test_readability_fires_in_pipeline(self):
         """Very complex prose in a working file -> readability warn through pipeline."""
-        area = self.kb / "area"
+        area = self.knowledge_base / "area"
         area.mkdir()
         _write(area / "overview.md", _valid_md("overview"))
         today = date.today().isoformat()
@@ -913,15 +913,15 @@ class TestNamingConventionsIntegration(unittest.TestCase):
 
     def setUp(self):
         self.tmpdir = Path(tempfile.mkdtemp())
-        self.kb = self.tmpdir / "docs"
-        self.kb.mkdir()
+        self.knowledge_base = self.tmpdir / "docs"
+        self.knowledge_base.mkdir()
 
     def tearDown(self):
         shutil.rmtree(self.tmpdir)
 
     def test_naming_conventions_fires_in_pipeline(self):
         """Uppercase directory name -> naming warn through pipeline."""
-        area = self.kb / "Bad_Name"
+        area = self.knowledge_base / "Bad_Name"
         area.mkdir()
         _write(area / "overview.md", _valid_md("overview"))
         result = run_health_check(self.tmpdir)
@@ -932,20 +932,20 @@ class TestNamingConventionsIntegration(unittest.TestCase):
         self.assertTrue(len(naming_issues) > 0)
 
 
-class TestCleanKbStillPasses(unittest.TestCase):
+class TestCleanKnowledgeBaseStillPasses(unittest.TestCase):
     """Ensure new validators don't break clean KB."""
 
     def setUp(self):
         self.tmpdir = Path(tempfile.mkdtemp())
-        self.kb = self.tmpdir / "docs"
-        self.kb.mkdir()
+        self.knowledge_base = self.tmpdir / "docs"
+        self.knowledge_base.mkdir()
 
     def tearDown(self):
         shutil.rmtree(self.tmpdir)
 
     def test_clean_kb_no_fails_with_new_validators(self):
         """A valid KB produces zero fail-severity issues with all new validators active."""
-        area = self.kb / "area-one"
+        area = self.knowledge_base / "area-one"
         area.mkdir()
         _write(area / "overview.md", _valid_md("overview"))
         _write(area / "topic.md", _valid_md("working"))
@@ -960,15 +960,15 @@ class TestPlaceholderIntegration(unittest.TestCase):
 
     def setUp(self):
         self.tmpdir = Path(tempfile.mkdtemp())
-        self.kb = self.tmpdir / "docs"
-        self.kb.mkdir()
+        self.knowledge_base = self.tmpdir / "docs"
+        self.knowledge_base.mkdir()
 
     def tearDown(self):
         shutil.rmtree(self.tmpdir)
 
     def test_placeholder_fires_in_pipeline(self):
         """File with template placeholders -> placeholder warn through pipeline."""
-        area = self.kb / "area"
+        area = self.knowledge_base / "area"
         area.mkdir()
         _write(area / "overview.md", _valid_md("overview"))
         today = date.today().isoformat()
@@ -999,15 +999,15 @@ class TestSourceAuthorityIntegration(unittest.TestCase):
 
     def setUp(self):
         self.tmpdir = Path(tempfile.mkdtemp())
-        self.kb = self.tmpdir / "docs"
-        self.kb.mkdir()
+        self.knowledge_base = self.tmpdir / "docs"
+        self.knowledge_base.mkdir()
 
     def tearDown(self):
         shutil.rmtree(self.tmpdir)
 
     def test_community_sources_appear_in_queue(self):
         """File with all community sources produces a source_authority trigger."""
-        area = self.kb / "area"
+        area = self.knowledge_base / "area"
         area.mkdir()
         _write(area / "overview.md", _valid_md("overview"))
         today = date.today().isoformat()

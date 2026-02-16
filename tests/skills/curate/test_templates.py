@@ -674,9 +674,9 @@ class TestRenderClaudeMd(unittest.TestCase):
 
     def test_custom_knowledge_dir(self, mock_date):
         mock_date.today.return_value = FIXED_DATE
-        result = render_claude_md("Dev", self._domain_areas(), knowledge_dir="kb")
-        self.assertIn("kb/", result)
-        self.assertIn("`kb/backend-development/`", result)
+        result = render_claude_md("Dev", self._domain_areas(), knowledge_dir="knowledge")
+        self.assertIn("knowledge/", result)
+        self.assertIn("`knowledge/backend-development/`", result)
 
 
 @patch("templates.date")
@@ -861,23 +861,23 @@ class TestRenderHooksJson(unittest.TestCase):
     """Tests for render_hooks_json."""
 
     def test_returns_valid_json(self):
-        result = render_hooks_json(plugin_root="/path/to/plugin", kb_root="/path/to/kb")
+        result = render_hooks_json(plugin_root="/path/to/plugin", knowledge_base_root="/path/to/kb")
         parsed = json.loads(result)
         self.assertIn("hooks", parsed)
 
     def test_contains_post_tool_use(self):
-        result = render_hooks_json(plugin_root="/path/to/plugin", kb_root="/path/to/kb")
+        result = render_hooks_json(plugin_root="/path/to/plugin", knowledge_base_root="/path/to/kb")
         parsed = json.loads(result)
         self.assertIn("PostToolUse", parsed["hooks"])
 
     def test_matcher_is_read(self):
-        result = render_hooks_json(plugin_root="/path/to/plugin", kb_root="/path/to/kb")
+        result = render_hooks_json(plugin_root="/path/to/plugin", knowledge_base_root="/path/to/kb")
         parsed = json.loads(result)
         hook_group = parsed["hooks"]["PostToolUse"][0]
         self.assertEqual(hook_group["matcher"], "Read")
 
     def test_command_references_script(self):
-        result = render_hooks_json(plugin_root="/path/to/plugin", kb_root="/path/to/kb")
+        result = render_hooks_json(plugin_root="/path/to/plugin", knowledge_base_root="/path/to/kb")
         parsed = json.loads(result)
         command = parsed["hooks"]["PostToolUse"][0]["hooks"][0]["command"]
         self.assertIn("hook_log_access.py", command)

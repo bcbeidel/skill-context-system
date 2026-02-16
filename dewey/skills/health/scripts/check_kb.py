@@ -65,9 +65,9 @@ from validators import (
 )
 
 
-def _discover_md_files(kb_root: Path, knowledge_dir_name: str = "docs") -> list[Path]:
+def _discover_md_files(knowledge_base_root: Path, knowledge_dir_name: str = "docs") -> list[Path]:
     """Return all .md files under the knowledge directory, excluding _proposals/ and index.md."""
-    knowledge_dir = kb_root / knowledge_dir_name
+    knowledge_dir = knowledge_base_root / knowledge_dir_name
     if not knowledge_dir.is_dir():
         return []
 
@@ -86,7 +86,7 @@ def _discover_md_files(kb_root: Path, knowledge_dir_name: str = "docs") -> list[
 
 
 def run_health_check(
-    kb_root: Path,
+    knowledge_base_root: Path,
     *,
     _persist_history: bool = True,
     fix: bool = False,
@@ -97,7 +97,7 @@ def run_health_check(
 
     Parameters
     ----------
-    kb_root:
+    knowledge_base_root:
         Root directory containing the ``docs/`` folder.
     _persist_history:
         When *True* (default), automatically persist a history snapshot.
@@ -114,19 +114,19 @@ def run_health_check(
         ``{"issues": [...], "summary": {...}}``
         When *fix* or *dry_run* is set, also includes ``"fixes": [...]``.
     """
-    knowledge_dir_name = read_knowledge_dir(kb_root)
+    knowledge_dir_name = read_knowledge_dir(knowledge_base_root)
     all_issues: list[dict] = []
-    md_files = _discover_md_files(kb_root, knowledge_dir_name)
+    md_files = _discover_md_files(knowledge_base_root, knowledge_dir_name)
 
     # Compute relative paths for history tracking
-    knowledge_dir = kb_root / knowledge_dir_name
+    knowledge_dir = knowledge_base_root / knowledge_dir_name
     file_list = [str(f.relative_to(knowledge_dir)) for f in md_files]
 
     # Per-file validators
     for md_file in md_files:
         all_issues.extend(check_frontmatter(md_file))
         all_issues.extend(check_section_ordering(md_file))
-        all_issues.extend(check_cross_references(md_file, kb_root))
+        all_issues.extend(check_cross_references(md_file, knowledge_base_root))
         all_issues.extend(check_size_bounds(md_file))
         all_issues.extend(check_source_urls(md_file))
         all_issues.extend(check_freshness(md_file))
@@ -142,17 +142,17 @@ def run_health_check(
             all_issues.extend(check_source_accessibility(md_file))
 
     # Structural validators (run once)
-    all_issues.extend(check_coverage(kb_root, knowledge_dir_name=knowledge_dir_name))
-    all_issues.extend(check_index_sync(kb_root, knowledge_dir_name=knowledge_dir_name))
-    all_issues.extend(check_inventory_regression(kb_root, file_list))
+    all_issues.extend(check_coverage(knowledge_base_root, knowledge_dir_name=knowledge_dir_name))
+    all_issues.extend(check_index_sync(knowledge_base_root, knowledge_dir_name=knowledge_dir_name))
+    all_issues.extend(check_inventory_regression(knowledge_base_root, file_list))
 
     # Cross-file consistency validators
-    all_issues.extend(check_manifest_sync(kb_root, knowledge_dir_name=knowledge_dir_name))
-    all_issues.extend(check_curation_plan_sync(kb_root, knowledge_dir_name=knowledge_dir_name))
-    all_issues.extend(check_proposal_integrity(kb_root, knowledge_dir_name=knowledge_dir_name))
-    all_issues.extend(check_link_graph(kb_root, knowledge_dir_name=knowledge_dir_name))
-    all_issues.extend(check_duplicate_content(kb_root, knowledge_dir_name=knowledge_dir_name))
-    all_issues.extend(check_naming_conventions(kb_root, knowledge_dir_name=knowledge_dir_name))
+    all_issues.extend(check_manifest_sync(knowledge_base_root, knowledge_dir_name=knowledge_dir_name))
+    all_issues.extend(check_curation_plan_sync(knowledge_base_root, knowledge_dir_name=knowledge_dir_name))
+    all_issues.extend(check_proposal_integrity(knowledge_base_root, knowledge_dir_name=knowledge_dir_name))
+    all_issues.extend(check_link_graph(knowledge_base_root, knowledge_dir_name=knowledge_dir_name))
+    all_issues.extend(check_duplicate_content(knowledge_base_root, knowledge_dir_name=knowledge_dir_name))
+    all_issues.extend(check_naming_conventions(knowledge_base_root, knowledge_dir_name=knowledge_dir_name))
 
     # Build summary
     files_with_fails = set()
@@ -222,13 +222,13 @@ def run_health_check(
                 })
         elif plan_issues:
             fixes.extend(fix_curation_plan_checkmarks(
-                kb_root, knowledge_dir_name=knowledge_dir_name,
+                knowledge_base_root, knowledge_dir_name=knowledge_dir_name,
             ))
 
         result["fixes"] = fixes
 
     if _persist_history:
-        record_snapshot(kb_root, result["summary"], None, file_list=file_list)
+        record_snapshot(knowledge_base_root, result["summary"], None, file_list=file_list)
     return result
 
 
@@ -247,12 +247,12 @@ _TIER2_TRIGGERS = [
 ]
 
 
-def run_tier2_prescreening(kb_root: Path, *, _persist_history: bool = True) -> dict:
+def run_tier2_prescreening(knowledge_base_root: Path, *, _persist_history: bool = True) -> dict:
     """Run all Tier 2 deterministic triggers and return a structured queue.
 
     Parameters
     ----------
-    kb_root:
+    knowledge_base_root:
         Root directory containing the ``docs/`` folder.
     _persist_history:
         When *True* (default), automatically persist a history snapshot.
@@ -264,10 +264,10 @@ def run_tier2_prescreening(kb_root: Path, *, _persist_history: bool = True) -> d
     dict
         ``{"queue": [...], "summary": {...}}``
     """
-    knowledge_dir_name = read_knowledge_dir(kb_root)
-    md_files = _discover_md_files(kb_root, knowledge_dir_name)
+    knowledge_dir_name = read_knowledge_dir(knowledge_base_root)
+    md_files = _discover_md_files(knowledge_base_root, knowledge_dir_name)
 
-    knowledge_dir = kb_root / knowledge_dir_name
+    knowledge_dir = knowledge_base_root / knowledge_dir_name
     file_list = [str(f.relative_to(knowledge_dir)) for f in md_files]
 
     queue: list[dict] = []
@@ -291,16 +291,16 @@ def run_tier2_prescreening(kb_root: Path, *, _persist_history: bool = True) -> d
         },
     }
     if _persist_history:
-        record_snapshot(kb_root, None, result["summary"], file_list=file_list)
+        record_snapshot(knowledge_base_root, None, result["summary"], file_list=file_list)
     return result
 
 
-def run_combined_report(kb_root: Path) -> dict:
+def run_combined_report(knowledge_base_root: Path) -> dict:
     """Run both Tier 1 checks and Tier 2 pre-screening, returning a combined report.
 
     Parameters
     ----------
-    kb_root:
+    knowledge_base_root:
         Root directory containing the ``docs/`` folder.
 
     Returns
@@ -308,24 +308,24 @@ def run_combined_report(kb_root: Path) -> dict:
     dict
         ``{"tier1": <run_health_check result>, "tier2": <run_tier2_prescreening result>}``
     """
-    knowledge_dir_name = read_knowledge_dir(kb_root)
-    md_files = _discover_md_files(kb_root, knowledge_dir_name)
-    knowledge_dir = kb_root / knowledge_dir_name
+    knowledge_dir_name = read_knowledge_dir(knowledge_base_root)
+    md_files = _discover_md_files(knowledge_base_root, knowledge_dir_name)
+    knowledge_dir = knowledge_base_root / knowledge_dir_name
     file_list = [str(f.relative_to(knowledge_dir)) for f in md_files]
 
     result = {
-        "tier1": run_health_check(kb_root, _persist_history=False),
-        "tier2": run_tier2_prescreening(kb_root, _persist_history=False),
+        "tier1": run_health_check(knowledge_base_root, _persist_history=False),
+        "tier2": run_tier2_prescreening(knowledge_base_root, _persist_history=False),
     }
     record_snapshot(
-        kb_root, result["tier1"]["summary"], result["tier2"]["summary"],
+        knowledge_base_root, result["tier1"]["summary"], result["tier2"]["summary"],
         file_list=file_list,
     )
     return result
 
 
 def generate_recommendations(
-    kb_root: Path,
+    knowledge_base_root: Path,
     min_reads: int = 10,
     min_days: int = 7,
 ) -> dict:
@@ -337,7 +337,7 @@ def generate_recommendations(
 
     Parameters
     ----------
-    kb_root:
+    knowledge_base_root:
         Root directory containing the knowledge base.
     min_reads:
         Minimum total reads across all files before recommendations
@@ -352,11 +352,11 @@ def generate_recommendations(
         ``{"recommendations": [...], "summary": {...}}``
         or ``{"recommendations": [], "skipped": str}`` if gating fails.
     """
-    knowledge_dir_name = read_knowledge_dir(kb_root)
-    md_files = _discover_md_files(kb_root, knowledge_dir_name)
-    knowledge_dir = kb_root / knowledge_dir_name
+    knowledge_dir_name = read_knowledge_dir(knowledge_base_root)
+    md_files = _discover_md_files(knowledge_base_root, knowledge_dir_name)
+    knowledge_dir = knowledge_base_root / knowledge_dir_name
 
-    # Build file paths relative to kb_root (with knowledge_dir prefix)
+    # Build file paths relative to knowledge_base_root (with knowledge_dir prefix)
     file_paths = {}
     for f in md_files:
         rel_to_kd = str(f.relative_to(knowledge_dir))
@@ -364,7 +364,7 @@ def generate_recommendations(
         file_paths[rel_to_root] = f
 
     # Read utilization data
-    utilization = read_utilization(kb_root)
+    utilization = read_utilization(knowledge_base_root)
 
     # --- Gating ---
     total_reads = sum(entry["count"] for entry in utilization.values())
@@ -576,9 +576,9 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="Run knowledge base health checks.")
     parser.add_argument(
-        "--kb-root",
+        "--knowledge-base-root",
         required=True,
-        help="Root directory containing the docs/ folder.",
+        help="Knowledge-base root directory containing the docs/ folder.",
     )
     parser.add_argument(
         "--tier2",
@@ -624,28 +624,28 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    kb_path = Path(args.kb_root)
+    knowledge_base_path = Path(args.knowledge_base_root)
 
     if args.both and args.recommendations:
-        report = run_combined_report(kb_path)
+        report = run_combined_report(knowledge_base_path)
         report["recommendations"] = generate_recommendations(
-            kb_path, min_reads=args.min_reads, min_days=args.min_days,
+            knowledge_base_path, min_reads=args.min_reads, min_days=args.min_days,
         )
     elif args.both:
-        report = run_combined_report(kb_path)
+        report = run_combined_report(knowledge_base_path)
     elif args.tier2 and args.recommendations:
         report = {
-            "tier2": run_tier2_prescreening(kb_path),
+            "tier2": run_tier2_prescreening(knowledge_base_path),
             "recommendations": generate_recommendations(
-                kb_path, min_reads=args.min_reads, min_days=args.min_days,
+                knowledge_base_path, min_reads=args.min_reads, min_days=args.min_days,
             ),
         }
     elif args.tier2:
-        report = run_tier2_prescreening(kb_path)
+        report = run_tier2_prescreening(knowledge_base_path)
     elif args.recommendations:
         report = generate_recommendations(
-            kb_path, min_reads=args.min_reads, min_days=args.min_days,
+            knowledge_base_path, min_reads=args.min_reads, min_days=args.min_days,
         )
     else:
-        report = run_health_check(kb_path, fix=args.fix, dry_run=args.dry_run, check_links=args.check_links)
+        report = run_health_check(knowledge_base_path, fix=args.fix, dry_run=args.dry_run, check_links=args.check_links)
     print(json.dumps(report, indent=2))

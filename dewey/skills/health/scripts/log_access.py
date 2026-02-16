@@ -21,12 +21,12 @@ from config import read_knowledge_dir
 from utilization import record_reference
 
 
-def log_if_knowledge_file(kb_root: Path, file_path: str) -> bool:
+def log_if_knowledge_file(knowledge_base_root: Path, file_path: str) -> bool:
     """Log a utilization event if *file_path* is a knowledge base topic.
 
     Parameters
     ----------
-    kb_root:
+    knowledge_base_root:
         Root directory of the knowledge base.
     file_path:
         Absolute path to the file that was read.
@@ -44,8 +44,8 @@ def log_if_knowledge_file(kb_root: Path, file_path: str) -> bool:
     if not path.exists():
         return False
 
-    knowledge_dir_name = read_knowledge_dir(kb_root)
-    knowledge_dir = (kb_root / knowledge_dir_name).resolve()
+    knowledge_dir_name = read_knowledge_dir(knowledge_base_root)
+    knowledge_dir = (knowledge_base_root / knowledge_dir_name).resolve()
 
     try:
         rel = path.resolve().relative_to(knowledge_dir)
@@ -57,5 +57,5 @@ def log_if_knowledge_file(kb_root: Path, file_path: str) -> bool:
         return False
 
     relative_path = f"{knowledge_dir_name}/{rel}"
-    record_reference(kb_root, relative_path, context="hook")
+    record_reference(knowledge_base_root, relative_path, context="hook")
     return True

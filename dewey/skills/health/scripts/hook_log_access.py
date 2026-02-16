@@ -11,7 +11,7 @@ Usage in .claude/hooks.json:
                 "matcher": "Read",
                 "hooks": [{
                     "type": "command",
-                    "command": "python3 <plugin_root>/skills/health/scripts/hook_log_access.py --kb-root <kb_root>"
+                    "command": "python3 <plugin_root>/skills/health/scripts/hook_log_access.py --knowledge-base-root <knowledge_base_root>"
                 }]
             }]
         }
@@ -42,7 +42,7 @@ def main() -> None:
     import argparse
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--kb-root", required=True)
+    parser.add_argument("--knowledge-base-root", required=True)
     args = parser.parse_args()
 
     try:
@@ -54,7 +54,7 @@ def main() -> None:
     if not file_path:
         return
 
-    log_if_knowledge_file(Path(args.kb_root), file_path)
+    log_if_knowledge_file(Path(args.knowledge_base_root), file_path)
 
 
 if __name__ == "__main__":

@@ -15,12 +15,12 @@ from templates import (
 )
 
 
-def create_topic(kb_root: Path, area: str, topic_name: str, relevance: str) -> str:
+def create_topic(knowledge_base_root: Path, area: str, topic_name: str, relevance: str) -> str:
     """Create a working-knowledge topic and its reference companion.
 
     Parameters
     ----------
-    kb_root:
+    knowledge_base_root:
         Root directory of the knowledge base.
     area:
         Domain area directory name (e.g. "campaign-management").
@@ -39,7 +39,7 @@ def create_topic(kb_root: Path, area: str, topic_name: str, relevance: str) -> s
     FileNotFoundError
         If the domain area directory does not exist.
     """
-    area_dir = kb_root / read_knowledge_dir(kb_root) / area
+    area_dir = knowledge_base_root / read_knowledge_dir(knowledge_base_root) / area
     if not area_dir.is_dir():
         raise FileNotFoundError(f"Domain area directory does not exist: {area_dir}")
 
@@ -50,13 +50,13 @@ def create_topic(kb_root: Path, area: str, topic_name: str, relevance: str) -> s
     topic_path = area_dir / f"{slug}.md"
     if not topic_path.exists():
         topic_path.write_text(render_topic_md(topic_name, relevance))
-        created.append(str(topic_path.relative_to(kb_root)))
+        created.append(str(topic_path.relative_to(knowledge_base_root)))
 
     # Expert-reference companion
     ref_path = area_dir / f"{slug}.ref.md"
     if not ref_path.exists():
         ref_path.write_text(render_topic_ref_md(topic_name, relevance))
-        created.append(str(ref_path.relative_to(kb_root)))
+        created.append(str(ref_path.relative_to(knowledge_base_root)))
 
     # Summary
     if created:
@@ -72,11 +72,11 @@ if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser(description="Create a topic in a domain area.")
-    parser.add_argument("--kb-root", required=True, help="KB root directory")
+    parser.add_argument("--knowledge-base-root", required=True, help="Knowledge-base root directory")
     parser.add_argument("--area", required=True, help="Domain area directory name")
     parser.add_argument("--topic", required=True, help="Topic name")
     parser.add_argument("--relevance", required=True, help="core / supporting / peripheral")
     args = parser.parse_args()
 
-    result = create_topic(Path(args.kb_root), args.area, args.topic, args.relevance)
+    result = create_topic(Path(args.knowledge_base_root), args.area, args.topic, args.relevance)
     print(result)

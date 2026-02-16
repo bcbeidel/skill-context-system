@@ -61,9 +61,9 @@ def _log_entry(file: str, timestamp: str, context: str = "hook") -> str:
     return json.dumps({"file": file, "timestamp": timestamp, "context": context})
 
 
-def _write_utilization_log(kb_root: Path, entries: list[str]) -> None:
+def _write_utilization_log(knowledge_base_root: Path, entries: list[str]) -> None:
     """Write utilization log entries to .dewey/utilization/log.jsonl."""
-    log_dir = kb_root / ".dewey" / "utilization"
+    log_dir = knowledge_base_root / ".dewey" / "utilization"
     log_dir.mkdir(parents=True, exist_ok=True)
     (log_dir / "log.jsonl").write_text("\n".join(entries) + "\n")
 
@@ -73,9 +73,9 @@ class TestGatingLogic(unittest.TestCase):
 
     def setUp(self):
         self.tmpdir = Path(tempfile.mkdtemp())
-        self.kb = self.tmpdir / "docs"
-        self.kb.mkdir()
-        area = self.kb / "area"
+        self.knowledge_base = self.tmpdir / "docs"
+        self.knowledge_base.mkdir()
+        area = self.knowledge_base / "area"
         area.mkdir()
         _write(area / "overview.md", _valid_md("overview"))
 
@@ -122,8 +122,8 @@ class TestNeverReferenced(unittest.TestCase):
 
     def setUp(self):
         self.tmpdir = Path(tempfile.mkdtemp())
-        self.kb = self.tmpdir / "docs"
-        area = self.kb / "area"
+        self.knowledge_base = self.tmpdir / "docs"
+        area = self.knowledge_base / "area"
         area.mkdir(parents=True)
         _write(area / "overview.md", _valid_md("overview"))
         _write(area / "topic.md", _valid_md("working"))
@@ -164,13 +164,13 @@ class TestExpandDepth(unittest.TestCase):
 
     def setUp(self):
         self.tmpdir = Path(tempfile.mkdtemp())
-        self.kb = self.tmpdir / "docs"
+        self.knowledge_base = self.tmpdir / "docs"
         # Area with only an overview
-        area_a = self.kb / "area-a"
+        area_a = self.knowledge_base / "area-a"
         area_a.mkdir(parents=True)
         _write(area_a / "overview.md", _valid_md("overview"))
         # Area with overview + working
-        area_b = self.kb / "area-b"
+        area_b = self.knowledge_base / "area-b"
         area_b.mkdir(parents=True)
         _write(area_b / "overview.md", _valid_md("overview"))
         _write(area_b / "topic.md", _valid_md("working"))
@@ -213,8 +213,8 @@ class TestLowUtilization(unittest.TestCase):
 
     def setUp(self):
         self.tmpdir = Path(tempfile.mkdtemp())
-        self.kb = self.tmpdir / "docs"
-        area = self.kb / "area"
+        self.knowledge_base = self.tmpdir / "docs"
+        area = self.knowledge_base / "area"
         area.mkdir(parents=True)
         _write(area / "overview.md", _valid_md("overview"))
         _write(area / "popular.md", _valid_md("working"))
@@ -257,8 +257,8 @@ class TestStaleHighUse(unittest.TestCase):
 
     def setUp(self):
         self.tmpdir = Path(tempfile.mkdtemp())
-        self.kb = self.tmpdir / "docs"
-        area = self.kb / "area"
+        self.knowledge_base = self.tmpdir / "docs"
+        area = self.knowledge_base / "area"
         area.mkdir(parents=True)
         _write(area / "overview.md", _valid_md("overview"))
         _write(area / "fresh.md", _valid_md("working"))
@@ -314,8 +314,8 @@ class TestPriorityOrdering(unittest.TestCase):
 
     def setUp(self):
         self.tmpdir = Path(tempfile.mkdtemp())
-        self.kb = self.tmpdir / "docs"
-        area = self.kb / "area"
+        self.knowledge_base = self.tmpdir / "docs"
+        area = self.knowledge_base / "area"
         area.mkdir(parents=True)
         _write(area / "overview.md", _valid_md("overview"))
         # Stale overview with high reads — could be expand_depth or stale_high_use
@@ -339,8 +339,8 @@ class TestSummary(unittest.TestCase):
 
     def setUp(self):
         self.tmpdir = Path(tempfile.mkdtemp())
-        self.kb = self.tmpdir / "docs"
-        area = self.kb / "area"
+        self.knowledge_base = self.tmpdir / "docs"
+        area = self.knowledge_base / "area"
         area.mkdir(parents=True)
         _write(area / "overview.md", _valid_md("overview"))
         _write(area / "topic.md", _valid_md("working"))
@@ -376,8 +376,8 @@ class TestCLI(unittest.TestCase):
 
     def setUp(self):
         self.tmpdir = Path(tempfile.mkdtemp())
-        self.kb = self.tmpdir / "docs"
-        area = self.kb / "area"
+        self.knowledge_base = self.tmpdir / "docs"
+        area = self.knowledge_base / "area"
         area.mkdir(parents=True)
         _write(area / "overview.md", _valid_md("overview"))
         _write(area / "topic.md", _valid_md("working"))
@@ -388,7 +388,7 @@ class TestCLI(unittest.TestCase):
     def _run(self, *extra_args) -> subprocess.CompletedProcess:
         script = Path(__file__).resolve().parent.parent.parent.parent / \
             "dewey" / "skills" / "health" / "scripts" / "check_kb.py"
-        cmd = ["python3", str(script), "--kb-root", str(self.tmpdir)]
+        cmd = ["python3", str(script), "--knowledge-base-root", str(self.tmpdir)]
         cmd.extend(extra_args)
         return subprocess.run(cmd, capture_output=True, text=True, timeout=10)
 

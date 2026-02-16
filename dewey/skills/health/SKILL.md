@@ -10,7 +10,7 @@ Validates knowledge base quality across three tiers and three quality dimensions
 
 ## Three-Tier Validation
 
-1. **Tier 1 -- Deterministic (Python)** -- Fast, automated checks run by `check_kb.py`. Validates frontmatter, section ordering, cross-references, size bounds, source URLs, freshness dates, and structural coverage. No LLM required. CI-friendly.
+1. **Tier 1 -- Deterministic (Python)** -- Fast, automated checks run by `check_kb.py`. 18 per-file validators (frontmatter, sections, size bounds, readability, sources, freshness, and more) plus 6 cross-file validators (manifest sync, curation plan sync, proposal integrity, link graph, duplicate detection, naming conventions). Auto-fix available for common issues. No LLM required. CI-friendly.
 2. **Tier 2 -- LLM-Assisted (Claude)** -- Claude evaluates items flagged by Tier 1 or entries with stale `last_validated` dates. Assesses source drift, depth label accuracy, "Why This Matters" quality, and "In Practice" concreteness.
 3. **Tier 3 -- Human Judgment** -- Surfaces decisions that require human input: relevance questions, scope decisions, pending proposals, and conflict resolution between knowledge base claims and updated sources.
 
@@ -95,6 +95,7 @@ All references in `references/`:
 |-----------|---------|
 | validation-rules.md | Complete list of Tier 1 checks with fields, thresholds, and severities |
 | quality-dimensions.md | Three quality dimensions: what each means, how measured, which checks apply |
+| design-principles.md | Twelve design principles grounded in agent context research and cognitive science |
 </references_index>
 
 <scripts_integration>
@@ -110,53 +111,77 @@ Located in `scripts/`:
 
 **Usage:**
 ```bash
-python3 ${CLAUDE_PLUGIN_ROOT}/skills/health/scripts/check_kb.py --kb-root <kb_root>
+python3 ${CLAUDE_PLUGIN_ROOT}/skills/health/scripts/check_kb.py --knowledge-base-root <knowledge_base_root>
 ```
 
 **validators.py** -- Tier 1 deterministic validators
+
+Structural checks:
 - `check_frontmatter` -- Required fields: sources, last_validated, relevance, depth
 - `check_section_ordering` -- "In Practice" before "Key Guidance" in working-depth files
+- `check_section_completeness` -- Required sections present for each depth level
+- `check_heading_hierarchy` -- No skipped heading levels (e.g., h1 to h3)
 - `check_cross_references` -- Internal markdown links resolve to existing files
 - `check_size_bounds` -- Line counts within range for each depth level
-- `check_source_urls` -- Source URLs are well-formed (http/https)
-- `check_freshness` -- last_validated within threshold (default 90 days)
+- `check_readability` -- Flesch-Kincaid grade level within bounds per depth (overview 8-14, working 10-16)
+
+Coverage and sync checks:
 - `check_coverage` -- Every area has overview.md; every topic has .ref.md companion
 - `check_index_sync` -- index.md references all topic files on disk; warns on stale index
+- `check_inventory_regression` -- Detects topics that disappeared between runs
+
+Source and link checks:
+- `check_source_urls` -- Source URLs are well-formed (http/https)
+- `check_freshness` -- last_validated within threshold (default 90 days)
+- `check_go_deeper_links` -- Working files link to their reference companions
+- `check_ref_see_also` -- Reference files include a "See Also" section linking back
+- `check_placeholder_comments` -- Flags TODO/FIXME/placeholder markers left in content
+- `check_source_diversity` -- Warns when all sources come from a single domain
+- `check_citation_grounding` -- Working files have inline citations near key claims
+- `check_source_accessibility` -- Source URLs return HTTP 200 (opt-in via `--check-links`)
 
 Every validator returns a list of issue dicts: `{"file": str, "message": str, "severity": "fail" | "warn"}`
 
 **Tier 2 pre-screening only:**
 ```bash
-python3 ${CLAUDE_PLUGIN_ROOT}/skills/health/scripts/check_kb.py --kb-root <kb_root> --tier2
+python3 ${CLAUDE_PLUGIN_ROOT}/skills/health/scripts/check_kb.py --knowledge-base-root <knowledge_base_root> --tier2
 ```
 
 **Combined Tier 1 + Tier 2:**
 ```bash
-python3 ${CLAUDE_PLUGIN_ROOT}/skills/health/scripts/check_kb.py --kb-root <kb_root> --both
+python3 ${CLAUDE_PLUGIN_ROOT}/skills/health/scripts/check_kb.py --knowledge-base-root <knowledge_base_root> --both
 ```
 
 Returns `{"tier1": {...}, "tier2": {...}}` with both Tier 1 issues/summary and Tier 2 queue/summary.
 
 **tier2_triggers.py** -- Tier 2 deterministic pre-screener
+
+Content quality triggers:
 - `trigger_source_drift` -- Flags files with stale or missing last_validated
 - `trigger_depth_accuracy` -- Flags files where word count or prose ratio mismatches depth
 - `trigger_source_primacy` -- Flags working files with low inline citation density
 - `trigger_why_quality` -- Flags working files with missing or thin "Why This Matters"
 - `trigger_concrete_examples` -- Flags working files with missing or abstract "In Practice"
+- `trigger_citation_quality` -- Flags files with weak or missing inline citations
+
+Source quality triggers:
+- `trigger_source_authority` -- Flags files whose sources lack authoritative domains
+- `trigger_provenance_completeness` -- Flags files with incomplete provenance metadata
+- `trigger_recommendation_coverage` -- Flags files lacking actionable recommendations
 
 Every trigger returns: `{"file": str, "trigger": str, "reason": str, "context": dict}`
 
 **history.py** -- Health score history tracking
-- `record_snapshot(kb_root, tier1_summary, tier2_summary)` -- Appends timestamped snapshot to `.dewey/history/health-log.jsonl`
-- `read_history(kb_root, limit=10)` -- Returns the last N snapshots in chronological order
+- `record_snapshot(knowledge_base_root, tier1_summary, tier2_summary)` -- Appends timestamped snapshot to `.dewey/history/health-log.jsonl`
+- `read_history(knowledge_base_root, limit=10)` -- Returns the last N snapshots in chronological order
 - Auto-called by `check_kb.py` after each run
 
 **utilization.py** -- Topic reference tracking
-- `record_reference(kb_root, file_path, context="user")` -- Appends to `.dewey/utilization/log.jsonl`
-- `read_utilization(kb_root)` -- Returns per-file stats: `{file: {count, first_referenced, last_referenced}}`
+- `record_reference(knowledge_base_root, file_path, context="user")` -- Appends to `.dewey/utilization/log.jsonl`
+- `read_utilization(knowledge_base_root)` -- Returns per-file stats: `{file: {count, first_referenced, last_referenced}}`
 
 **log_access.py** -- Hook-driven utilization logging
-- `log_if_knowledge_file(kb_root, file_path)` -- Logs access if file is a .md under the knowledge directory
+- `log_if_knowledge_file(knowledge_base_root, file_path)` -- Logs access if file is a .md under the knowledge directory
 - Filters out _proposals, non-.md files, and files outside the knowledge directory
 - Called by `hook_log_access.py` (Claude Code PostToolUse hook entry point)
 
@@ -164,6 +189,21 @@ Every trigger returns: `{"file": str, "trigger": str, "reason": str, "context": 
 - Reads tool input JSON from stdin, extracts file_path
 - Calls `log_if_knowledge_file` to conditionally log the access
 - Exit code always 0 (hook failures never block the agent)
+
+**cross_validators.py** -- Cross-file consistency validators
+- `check_manifest_sync` -- AGENTS.md topic list matches files on disk
+- `check_curation_plan_sync` -- Curation plan checkmarks match actual file presence
+- `check_proposal_integrity` -- Proposals have required frontmatter and valid target areas
+- `check_link_graph` -- Internal links between knowledge files all resolve
+- `check_duplicate_content` -- Detects duplicate paragraphs and high Jaccard similarity across files (skips companion pairs)
+- `check_naming_conventions` -- Validates directory and file names against slug conventions
+
+Every cross-validator returns: `{"file": str, "message": str, "severity": "fail" | "warn"}`
+
+**auto_fix.py** -- Automated fixes for common issues
+- `fix_missing_sections` -- Adds missing required sections with placeholder content
+- `fix_missing_cross_links` -- Adds "Go Deeper" / "See Also" links between companion files
+- `fix_curation_plan_checkmarks` -- Updates curation plan checkmarks to match files on disk
 </scripts_integration>
 
 <success_criteria>

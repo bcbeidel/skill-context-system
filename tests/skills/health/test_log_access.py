@@ -15,15 +15,15 @@ class TestLogIfKnowledgeFile(unittest.TestCase):
 
     def setUp(self):
         self.tmpdir = Path(tempfile.mkdtemp())
-        self.kb_dir = self.tmpdir / "docs"
-        self.kb_dir.mkdir()
+        self.knowledge_base_dir = self.tmpdir / "docs"
+        self.knowledge_base_dir.mkdir()
 
     def tearDown(self):
         shutil.rmtree(self.tmpdir)
 
     def test_logs_file_under_knowledge_dir(self):
         """A file under the knowledge directory should be logged."""
-        topic = self.kb_dir / "area" / "topic.md"
+        topic = self.knowledge_base_dir / "area" / "topic.md"
         topic.parent.mkdir(parents=True)
         topic.write_text("content")
         logged = log_if_knowledge_file(self.tmpdir, str(topic))
@@ -44,7 +44,7 @@ class TestLogIfKnowledgeFile(unittest.TestCase):
 
     def test_ignores_proposals(self):
         """Files under _proposals/ should not be logged."""
-        proposal = self.kb_dir / "_proposals" / "draft.md"
+        proposal = self.knowledge_base_dir / "_proposals" / "draft.md"
         proposal.parent.mkdir(parents=True)
         proposal.write_text("content")
         logged = log_if_knowledge_file(self.tmpdir, str(proposal))
@@ -52,7 +52,7 @@ class TestLogIfKnowledgeFile(unittest.TestCase):
 
     def test_ignores_non_md_files(self):
         """Non-markdown files should not be logged."""
-        img = self.kb_dir / "area" / "diagram.png"
+        img = self.knowledge_base_dir / "area" / "diagram.png"
         img.parent.mkdir(parents=True)
         img.write_text("binary")
         logged = log_if_knowledge_file(self.tmpdir, str(img))
@@ -60,7 +60,7 @@ class TestLogIfKnowledgeFile(unittest.TestCase):
 
     def test_context_is_hook(self):
         """Context should be 'hook' for auto-captured access."""
-        topic = self.kb_dir / "area" / "topic.md"
+        topic = self.knowledge_base_dir / "area" / "topic.md"
         topic.parent.mkdir(parents=True)
         topic.write_text("content")
         log_if_knowledge_file(self.tmpdir, str(topic))
@@ -69,8 +69,8 @@ class TestLogIfKnowledgeFile(unittest.TestCase):
         self.assertEqual(entry["context"], "hook")
 
     def test_stores_relative_path(self):
-        """Logged file path should be relative to kb_root, not absolute."""
-        topic = self.kb_dir / "area" / "topic.md"
+        """Logged file path should be relative to knowledge_base_root, not absolute."""
+        topic = self.knowledge_base_dir / "area" / "topic.md"
         topic.parent.mkdir(parents=True)
         topic.write_text("content")
         log_if_knowledge_file(self.tmpdir, str(topic))
@@ -103,8 +103,8 @@ class TestHookEntryPoint(unittest.TestCase):
 
     def setUp(self):
         self.tmpdir = Path(tempfile.mkdtemp())
-        self.kb_dir = self.tmpdir / "docs"
-        self.kb_dir.mkdir()
+        self.knowledge_base_dir = self.tmpdir / "docs"
+        self.knowledge_base_dir.mkdir()
 
     def tearDown(self):
         shutil.rmtree(self.tmpdir)
@@ -114,7 +114,7 @@ class TestHookEntryPoint(unittest.TestCase):
         script = Path(__file__).resolve().parent.parent.parent.parent / \
             "dewey" / "skills" / "health" / "scripts" / "hook_log_access.py"
         return subprocess.run(
-            ["python3", str(script), "--kb-root", str(self.tmpdir)],
+            ["python3", str(script), "--knowledge-base-root", str(self.tmpdir)],
             input=json.dumps(tool_input),
             capture_output=True,
             text=True,
@@ -123,7 +123,7 @@ class TestHookEntryPoint(unittest.TestCase):
 
     def test_logs_knowledge_file_via_stdin(self):
         """Hook should log a knowledge file path received via stdin."""
-        topic = self.kb_dir / "area" / "topic.md"
+        topic = self.knowledge_base_dir / "area" / "topic.md"
         topic.parent.mkdir(parents=True)
         topic.write_text("content")
         result = self._run_hook({"file_path": str(topic)})
@@ -148,7 +148,7 @@ class TestHookEntryPoint(unittest.TestCase):
         script = Path(__file__).resolve().parent.parent.parent.parent / \
             "dewey" / "skills" / "health" / "scripts" / "hook_log_access.py"
         result = subprocess.run(
-            ["python3", str(script), "--kb-root", str(self.tmpdir)],
+            ["python3", str(script), "--knowledge-base-root", str(self.tmpdir)],
             input="not json",
             capture_output=True,
             text=True,

@@ -100,15 +100,15 @@ class TestCheckManifestSync(unittest.TestCase):
 
     def setUp(self):
         self.tmpdir = Path(tempfile.mkdtemp())
-        self.kb = self.tmpdir / "docs"
-        self.kb.mkdir()
+        self.knowledge_base = self.tmpdir / "docs"
+        self.knowledge_base.mkdir()
 
     def tearDown(self):
         shutil.rmtree(self.tmpdir)
 
     def test_synced_agents_and_claude_no_issues(self):
         """Perfectly synced AGENTS.md + CLAUDE.md -> no issues."""
-        area = self.kb / "area-one"
+        area = self.knowledge_base / "area-one"
         area.mkdir()
         _write(area / "overview.md", _valid_fm("overview") + "\n# Area One\n")
         _write(area / "topic.md", _valid_fm("working") + "\n" + _working_body())
@@ -126,7 +126,7 @@ class TestCheckManifestSync(unittest.TestCase):
 
     def test_area_on_disk_not_in_agents(self):
         """Area dir on disk not listed in AGENTS.md -> warn."""
-        area = self.kb / "area-one"
+        area = self.knowledge_base / "area-one"
         area.mkdir()
         _write(area / "overview.md", _valid_fm("overview") + "\n# Area\n")
 
@@ -138,7 +138,7 @@ class TestCheckManifestSync(unittest.TestCase):
 
     def test_topic_on_disk_not_in_agents(self):
         """Topic file on disk not in AGENTS.md table -> warn."""
-        area = self.kb / "area-one"
+        area = self.knowledge_base / "area-one"
         area.mkdir()
         _write(area / "overview.md", _valid_fm("overview") + "\n# Area\n")
         _write(area / "topic.md", _valid_fm("working") + "\n# Topic\n")
@@ -154,7 +154,7 @@ class TestCheckManifestSync(unittest.TestCase):
 
     def test_agents_entry_references_missing_file(self):
         """AGENTS.md entry pointing to nonexistent file -> warn."""
-        area = self.kb / "area-one"
+        area = self.knowledge_base / "area-one"
         area.mkdir()
         _write(area / "overview.md", _valid_fm("overview") + "\n# Area\n")
 
@@ -169,7 +169,7 @@ class TestCheckManifestSync(unittest.TestCase):
 
     def test_area_on_disk_not_in_claude(self):
         """Area dir on disk not listed in CLAUDE.md -> warn."""
-        area = self.kb / "area-one"
+        area = self.knowledge_base / "area-one"
         area.mkdir()
         _write(area / "overview.md", _valid_fm("overview") + "\n# Area\n")
 
@@ -191,7 +191,7 @@ class TestCheckManifestSync(unittest.TestCase):
 
     def test_missing_agents_skips(self):
         """No AGENTS.md -> skip (empty list)."""
-        area = self.kb / "area-one"
+        area = self.knowledge_base / "area-one"
         area.mkdir()
         _write(area / "overview.md", _valid_fm("overview") + "\n# Area\n")
         # No AGENTS.md, no CLAUDE.md
@@ -200,7 +200,7 @@ class TestCheckManifestSync(unittest.TestCase):
 
     def test_no_markers_in_agents_skips(self):
         """AGENTS.md without markers -> skip."""
-        area = self.kb / "area-one"
+        area = self.knowledge_base / "area-one"
         area.mkdir()
         _write(area / "overview.md", _valid_fm("overview") + "\n# Area\n")
 
@@ -219,8 +219,8 @@ class TestCheckCurationPlanSync(unittest.TestCase):
 
     def setUp(self):
         self.tmpdir = Path(tempfile.mkdtemp())
-        self.kb = self.tmpdir / "docs"
-        self.kb.mkdir()
+        self.knowledge_base = self.tmpdir / "docs"
+        self.knowledge_base.mkdir()
 
     def tearDown(self):
         shutil.rmtree(self.tmpdir)
@@ -230,7 +230,7 @@ class TestCheckCurationPlanSync(unittest.TestCase):
 
     def test_synced_plan_no_issues(self):
         """Checked items with files + unchecked without files -> no issues."""
-        area = self.kb / "area-one"
+        area = self.knowledge_base / "area-one"
         area.mkdir()
         _write(area / "overview.md", _valid_fm("overview") + "\n# Area\n")
         _write(area / "topic-a.md", _valid_fm("working") + "\n# Topic A\n")
@@ -250,7 +250,7 @@ class TestCheckCurationPlanSync(unittest.TestCase):
 
     def test_checked_item_missing_file(self):
         """[x] item without matching file -> warn."""
-        area = self.kb / "area-one"
+        area = self.knowledge_base / "area-one"
         area.mkdir()
         _write(area / "overview.md", _valid_fm("overview") + "\n# Area\n")
 
@@ -267,7 +267,7 @@ class TestCheckCurationPlanSync(unittest.TestCase):
 
     def test_unchecked_item_with_file(self):
         """[ ] item where matching file exists -> warn."""
-        area = self.kb / "area-one"
+        area = self.knowledge_base / "area-one"
         area.mkdir()
         _write(area / "overview.md", _valid_fm("overview") + "\n# Area\n")
         _write(area / "existing-topic.md", _valid_fm("working") + "\n# Topic\n")
@@ -285,7 +285,7 @@ class TestCheckCurationPlanSync(unittest.TestCase):
 
     def test_topic_not_in_plan(self):
         """Topic file on disk not mentioned in plan -> warn."""
-        area = self.kb / "area-one"
+        area = self.knowledge_base / "area-one"
         area.mkdir()
         _write(area / "overview.md", _valid_fm("overview") + "\n# Area\n")
         _write(area / "surprise.md", _valid_fm("working") + "\n# Surprise\n")
@@ -303,7 +303,7 @@ class TestCheckCurationPlanSync(unittest.TestCase):
 
     def test_no_plan_file_skips(self):
         """No plan file -> skip."""
-        area = self.kb / "area-one"
+        area = self.knowledge_base / "area-one"
         area.mkdir()
         _write(area / "overview.md", _valid_fm("overview") + "\n# Area\n")
 
@@ -323,7 +323,7 @@ class TestCheckCurationPlanSync(unittest.TestCase):
 
     def test_slugify_matching(self):
         """'Bid Strategies' matches bid-strategies.md via slugify."""
-        area = self.kb / "area-one"
+        area = self.knowledge_base / "area-one"
         area.mkdir()
         _write(area / "overview.md", _valid_fm("overview") + "\n# Area\n")
         _write(area / "bid-strategies.md", _valid_fm("working") + "\n# Bid Strategies\n")
@@ -346,8 +346,8 @@ class TestCheckProposalIntegrity(unittest.TestCase):
 
     def setUp(self):
         self.tmpdir = Path(tempfile.mkdtemp())
-        self.kb = self.tmpdir / "docs"
-        self.kb.mkdir()
+        self.knowledge_base = self.tmpdir / "docs"
+        self.knowledge_base.mkdir()
 
     def tearDown(self):
         shutil.rmtree(self.tmpdir)
@@ -388,7 +388,7 @@ class TestCheckProposalIntegrity(unittest.TestCase):
     def test_valid_proposal_no_issues(self):
         """Well-formed proposal -> no issues."""
         _write(
-            self.kb / "_proposals" / "new-topic.md",
+            self.knowledge_base / "_proposals" / "new-topic.md",
             self._proposal_fm() + self._proposal_body(),
         )
         issues = check_proposal_integrity(self.tmpdir, knowledge_dir_name="docs")
@@ -398,7 +398,7 @@ class TestCheckProposalIntegrity(unittest.TestCase):
         """Proposal without status: proposal -> warn."""
         fm = self._proposal_fm()
         fm = fm.replace("status: proposal\n", "")
-        _write(self.kb / "_proposals" / "draft.md", fm + self._proposal_body())
+        _write(self.knowledge_base / "_proposals" / "draft.md", fm + self._proposal_body())
         issues = check_proposal_integrity(self.tmpdir, knowledge_dir_name="docs")
         msgs = [i["message"] for i in issues]
         self.assertTrue(any("status" in m.lower() for m in msgs))
@@ -407,7 +407,7 @@ class TestCheckProposalIntegrity(unittest.TestCase):
         """Proposal without proposed_by -> warn."""
         fm = self._proposal_fm()
         fm = fm.replace("proposed_by: claude\n", "")
-        _write(self.kb / "_proposals" / "draft.md", fm + self._proposal_body())
+        _write(self.knowledge_base / "_proposals" / "draft.md", fm + self._proposal_body())
         issues = check_proposal_integrity(self.tmpdir, knowledge_dir_name="docs")
         msgs = [i["message"] for i in issues]
         self.assertTrue(any("proposed_by" in m for m in msgs))
@@ -416,7 +416,7 @@ class TestCheckProposalIntegrity(unittest.TestCase):
         """Proposal without rationale -> warn."""
         fm = self._proposal_fm()
         fm = fm.replace("rationale: Fills a gap in coverage\n", "")
-        _write(self.kb / "_proposals" / "draft.md", fm + self._proposal_body())
+        _write(self.knowledge_base / "_proposals" / "draft.md", fm + self._proposal_body())
         issues = check_proposal_integrity(self.tmpdir, knowledge_dir_name="docs")
         msgs = [i["message"] for i in issues]
         self.assertTrue(any("rationale" in m for m in msgs))
@@ -425,7 +425,7 @@ class TestCheckProposalIntegrity(unittest.TestCase):
         """Proposal with old last_validated -> warn."""
         old_date = (date.today() - timedelta(days=90)).isoformat()
         _write(
-            self.kb / "_proposals" / "old.md",
+            self.knowledge_base / "_proposals" / "old.md",
             self._proposal_fm(last_validated=old_date) + self._proposal_body(),
         )
         issues = check_proposal_integrity(self.tmpdir, knowledge_dir_name="docs")
@@ -440,7 +440,7 @@ class TestCheckProposalIntegrity(unittest.TestCase):
     def test_missing_working_sections(self):
         """Proposal missing working sections -> warn."""
         _write(
-            self.kb / "_proposals" / "bare.md",
+            self.knowledge_base / "_proposals" / "bare.md",
             self._proposal_fm() + "\n# Proposal\n\nJust a title.\n",
         )
         issues = check_proposal_integrity(self.tmpdir, knowledge_dir_name="docs")
@@ -456,15 +456,15 @@ class TestCheckLinkGraph(unittest.TestCase):
 
     def setUp(self):
         self.tmpdir = Path(tempfile.mkdtemp())
-        self.kb = self.tmpdir / "docs"
-        self.kb.mkdir()
+        self.knowledge_base = self.tmpdir / "docs"
+        self.knowledge_base.mkdir()
 
     def tearDown(self):
         shutil.rmtree(self.tmpdir)
 
     def test_fully_linked_kb_no_issues(self):
         """All files linked from overview -> no orphans, no missing from overview."""
-        area = self.kb / "area-one"
+        area = self.knowledge_base / "area-one"
         area.mkdir()
         overview = (
             _valid_fm("overview")
@@ -490,7 +490,7 @@ class TestCheckLinkGraph(unittest.TestCase):
 
     def test_orphaned_file(self):
         """File not linked from any other file -> warn."""
-        area = self.kb / "area-one"
+        area = self.knowledge_base / "area-one"
         area.mkdir()
         _write(area / "overview.md", _valid_fm("overview") + "\n# Area\n\n## How It's Organized\nNothing.\n")
         _write(area / "orphan.md", _valid_fm("working") + "\n# Orphan\n")
@@ -501,7 +501,7 @@ class TestCheckLinkGraph(unittest.TestCase):
 
     def test_overview_not_flagged_as_orphan(self):
         """overview.md is an entry point — should not be flagged as orphan."""
-        area = self.kb / "area-one"
+        area = self.knowledge_base / "area-one"
         area.mkdir()
         _write(area / "overview.md", _valid_fm("overview") + "\n# Area\n")
 
@@ -512,8 +512,8 @@ class TestCheckLinkGraph(unittest.TestCase):
 
     def test_index_not_flagged_as_orphan(self):
         """index.md is excluded from discovery — not validated at all."""
-        _write(self.kb / "index.md", "# Index\n")
-        area = self.kb / "area-one"
+        _write(self.knowledge_base / "index.md", "# Index\n")
+        area = self.knowledge_base / "area-one"
         area.mkdir()
         _write(area / "overview.md", _valid_fm("overview") + "\n# Area\n")
 
@@ -523,7 +523,7 @@ class TestCheckLinkGraph(unittest.TestCase):
 
     def test_topic_not_in_overview(self):
         """Topic file not listed in overview's How It's Organized -> warn."""
-        area = self.kb / "area-one"
+        area = self.knowledge_base / "area-one"
         area.mkdir()
         overview = (
             _valid_fm("overview")
@@ -555,15 +555,15 @@ class TestCheckDuplicateContent(unittest.TestCase):
 
     def setUp(self):
         self.tmpdir = Path(tempfile.mkdtemp())
-        self.kb = self.tmpdir / "docs"
-        self.kb.mkdir()
+        self.knowledge_base = self.tmpdir / "docs"
+        self.knowledge_base.mkdir()
 
     def tearDown(self):
         shutil.rmtree(self.tmpdir)
 
     def test_no_duplicates_no_issues(self):
         """Unique content across files -> no issues."""
-        area = self.kb / "area-one"
+        area = self.knowledge_base / "area-one"
         area.mkdir()
         _write(area / "overview.md", _valid_fm("overview") + "\n# Area\n\n"
                + "This is a unique paragraph about the overview topic with enough words to count.\n")
@@ -574,7 +574,7 @@ class TestCheckDuplicateContent(unittest.TestCase):
 
     def test_exact_duplicate_paragraph_warns(self):
         """Same paragraph in two files -> warn."""
-        area = self.kb / "area-one"
+        area = self.knowledge_base / "area-one"
         area.mkdir()
         shared_para = "This is a substantial paragraph that appears in both files and should be detected as a duplicate by the validator."
         _write(area / "overview.md", _valid_fm("overview") + f"\n# Area\n\n{shared_para}\n")
@@ -585,7 +585,7 @@ class TestCheckDuplicateContent(unittest.TestCase):
 
     def test_companion_pair_no_similarity_warning(self):
         """Working/ref companion pair -> skip similarity check."""
-        area = self.kb / "area-one"
+        area = self.knowledge_base / "area-one"
         area.mkdir()
         _write(area / "overview.md", _valid_fm("overview") + "\n# Area\n\nUnique overview content here with enough words.\n")
         shared = (
@@ -602,7 +602,7 @@ class TestCheckDuplicateContent(unittest.TestCase):
 
     def test_high_similarity_non_companion_warns(self):
         """High Jaccard similarity between non-companion files -> warn."""
-        area = self.kb / "area-one"
+        area = self.knowledge_base / "area-one"
         area.mkdir()
         _write(area / "overview.md", _valid_fm("overview") + "\n# Area\n\nOverview content standalone.\n")
         # Two very similar non-companion files
@@ -621,7 +621,7 @@ class TestCheckDuplicateContent(unittest.TestCase):
 
     def test_short_paragraphs_ignored(self):
         """Paragraphs under 40 chars are not checked for duplicates."""
-        area = self.kb / "area-one"
+        area = self.knowledge_base / "area-one"
         area.mkdir()
         _write(area / "overview.md", _valid_fm("overview") + "\n# Area\n\nShort.\n")
         _write(area / "topic.md", _valid_fm("working") + "\n# Topic\n\nShort.\n")
@@ -631,7 +631,7 @@ class TestCheckDuplicateContent(unittest.TestCase):
 
     def test_code_blocks_excluded(self):
         """Code blocks should be stripped before comparison."""
-        area = self.kb / "area-one"
+        area = self.knowledge_base / "area-one"
         area.mkdir()
         code = "```python\nfor i in range(100):\n    print(i)\n```\n"
         overview_text = (
@@ -662,15 +662,15 @@ class TestCheckNamingConventions(unittest.TestCase):
 
     def setUp(self):
         self.tmpdir = Path(tempfile.mkdtemp())
-        self.kb = self.tmpdir / "docs"
-        self.kb.mkdir()
+        self.knowledge_base = self.tmpdir / "docs"
+        self.knowledge_base.mkdir()
 
     def tearDown(self):
         shutil.rmtree(self.tmpdir)
 
     def test_well_named_files_no_issues(self):
         """Properly slugified names -> no issues."""
-        area = self.kb / "area-one"
+        area = self.knowledge_base / "area-one"
         area.mkdir()
         _write(area / "overview.md", _valid_fm("overview") + "\n# Area\n")
         _write(area / "my-topic.md", _valid_fm("working") + "\n# Topic\n")
@@ -680,7 +680,7 @@ class TestCheckNamingConventions(unittest.TestCase):
 
     def test_uppercase_directory_warns(self):
         """Uppercase directory name -> warn."""
-        area = self.kb / "Area-One"
+        area = self.knowledge_base / "Area-One"
         area.mkdir()
         _write(area / "overview.md", _valid_fm("overview") + "\n# Area\n")
         issues = check_naming_conventions(self.tmpdir, knowledge_dir_name="docs")
@@ -689,7 +689,7 @@ class TestCheckNamingConventions(unittest.TestCase):
 
     def test_underscore_in_filename_warns(self):
         """Underscore in filename -> warn."""
-        area = self.kb / "area-one"
+        area = self.knowledge_base / "area-one"
         area.mkdir()
         _write(area / "overview.md", _valid_fm("overview") + "\n# Area\n")
         _write(area / "my_topic.md", _valid_fm("working") + "\n# Topic\n")
@@ -699,7 +699,7 @@ class TestCheckNamingConventions(unittest.TestCase):
 
     def test_overview_and_index_exempt(self):
         """overview.md and index.md are exempt from slug check."""
-        area = self.kb / "area-one"
+        area = self.knowledge_base / "area-one"
         area.mkdir()
         _write(area / "overview.md", _valid_fm("overview") + "\n# Area\n")
         _write(area / "index.md", "# Index\n")

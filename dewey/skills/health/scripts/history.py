@@ -19,7 +19,7 @@ _LOG_FILE = "health-log.jsonl"
 
 
 def record_snapshot(
-    kb_root: Path,
+    knowledge_base_root: Path,
     tier1_summary: dict,
     tier2_summary: Optional[dict] = None,
     file_list: Optional[list] = None,
@@ -28,15 +28,15 @@ def record_snapshot(
 
     Parameters
     ----------
-    kb_root:
+    knowledge_base_root:
         Root directory of the knowledge base (the log is written
-        inside ``kb_root/.dewey/history/``).
+        inside ``knowledge_base_root/.dewey/history/``).
     tier1_summary:
         Summary dict from ``run_health_check``.
     tier2_summary:
         Optional summary dict from ``run_tier2_prescreening``.
     file_list:
-        Optional list of knowledge-base file paths (relative to kb_root)
+        Optional list of knowledge-base file paths (relative to knowledge_base_root)
         discovered during this check run.
 
     Returns
@@ -44,7 +44,7 @@ def record_snapshot(
     Path
         Absolute path to the log file.
     """
-    log_dir = kb_root / _LOG_DIR
+    log_dir = knowledge_base_root / _LOG_DIR
     log_dir.mkdir(parents=True, exist_ok=True)
 
     log_path = log_dir / _LOG_FILE
@@ -62,12 +62,12 @@ def record_snapshot(
     return log_path
 
 
-def read_history(kb_root: Path, limit: int = 10) -> list[dict]:
+def read_history(knowledge_base_root: Path, limit: int = 10) -> list[dict]:
     """Read the last *limit* health check snapshots.
 
     Returns snapshots in chronological order (oldest first).
     """
-    log_file = kb_root / ".dewey" / "history" / "health-log.jsonl"
+    log_file = knowledge_base_root / ".dewey" / "history" / "health-log.jsonl"
     if not log_file.exists():
         return []
 

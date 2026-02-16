@@ -19,7 +19,7 @@ _LOG_FILE = "log.jsonl"
 
 
 def record_reference(
-    kb_root: Path,
+    knowledge_base_root: Path,
     file_path: str,
     context: str = "user",
 ) -> Path:
@@ -27,11 +27,11 @@ def record_reference(
 
     Parameters
     ----------
-    kb_root:
+    knowledge_base_root:
         Root directory of the knowledge base (the log is written
-        inside ``kb_root/.dewey/utilization/``).
+        inside ``knowledge_base_root/.dewey/utilization/``).
     file_path:
-        Relative path (from *kb_root*) of the referenced file,
+        Relative path (from *knowledge_base_root*) of the referenced file,
         e.g. ``"topic/foo.md"``.
     context:
         Free-form label describing *how* the file was referenced.
@@ -42,7 +42,7 @@ def record_reference(
     Path
         Absolute path to the log file.
     """
-    log_dir = kb_root / _LOG_DIR
+    log_dir = knowledge_base_root / _LOG_DIR
     log_dir.mkdir(parents=True, exist_ok=True)
 
     log_path = log_dir / _LOG_FILE
@@ -59,13 +59,13 @@ def record_reference(
     return log_path
 
 
-def read_utilization(kb_root: Path) -> dict[str, dict]:
+def read_utilization(knowledge_base_root: Path) -> dict[str, dict]:
     """Read utilization stats per file.
 
     Returns mapping of file path to
     {"count": int, "first_referenced": str, "last_referenced": str}.
     """
-    log_file = kb_root / ".dewey" / "utilization" / "log.jsonl"
+    log_file = knowledge_base_root / ".dewey" / "utilization" / "log.jsonl"
     if not log_file.exists():
         return {}
 

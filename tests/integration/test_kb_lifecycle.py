@@ -4,7 +4,7 @@ import tempfile
 import shutil
 from pathlib import Path
 
-from scaffold import scaffold_kb
+from scaffold import scaffold_knowledge_base
 from templates import MARKER_BEGIN, MARKER_END
 from create_topic import create_topic
 from propose import create_proposal
@@ -12,7 +12,7 @@ from promote import promote_proposal
 from check_kb import run_health_check
 
 
-class TestKBLifecycle(unittest.TestCase):
+class TestKnowledgeBaseLifecycle(unittest.TestCase):
     def setUp(self):
         self.tmpdir = Path(tempfile.mkdtemp())
 
@@ -21,7 +21,7 @@ class TestKBLifecycle(unittest.TestCase):
 
     def test_full_lifecycle(self):
         # 1. Init knowledge base
-        result = scaffold_kb(self.tmpdir, "Test Analyst", ["Domain A"])
+        result = scaffold_knowledge_base(self.tmpdir, "Test Analyst", ["Domain A"])
         self.assertIn("created", result.lower())
         self.assertTrue((self.tmpdir / "AGENTS.md").exists())
         self.assertTrue((self.tmpdir / "docs" / "domain-a" / "overview.md").exists())
@@ -59,7 +59,7 @@ class TestKBLifecycle(unittest.TestCase):
 
     def test_health_check_on_fresh_kb(self):
         """A freshly scaffolded knowledge base with one complete topic should be reasonably healthy."""
-        scaffold_kb(self.tmpdir, "Test Analyst", ["Domain A"])
+        scaffold_knowledge_base(self.tmpdir, "Test Analyst", ["Domain A"])
         create_topic(self.tmpdir, "domain-a", "First Topic", "Testing")
 
         report = run_health_check(self.tmpdir)
@@ -73,7 +73,7 @@ class TestKBLifecycle(unittest.TestCase):
             print(f"  FAIL: {issue['file']}: {issue['message']}")
 
 
-class TestSandboxKB(unittest.TestCase):
+class TestSandboxKnowledgeBase(unittest.TestCase):
     """Test creating a knowledge base in the sandbox directory for live exploration."""
 
     def test_scaffold_sandbox_kb(self):
@@ -83,7 +83,7 @@ class TestSandboxKB(unittest.TestCase):
 
         # Only scaffold if empty (don't overwrite between test runs)
         if not (sandbox / "AGENTS.md").exists():
-            scaffold_kb(
+            scaffold_knowledge_base(
                 sandbox,
                 "Example Analyst",
                 ["Research Methods", "Data Analysis", "Reporting"],

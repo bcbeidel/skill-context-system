@@ -10,7 +10,7 @@ Use a two-step approach:
 ### Step 1a: Run check_kb.py for initial scan
 
 ```bash
-python3 ${CLAUDE_PLUGIN_ROOT}/skills/health/scripts/check_kb.py --kb-root <kb_root>
+python3 ${CLAUDE_PLUGIN_ROOT}/skills/health/scripts/check_kb.py --knowledge-base-root <knowledge_base_root>
 ```
 
 This runs `check_freshness` as part of Tier 1 validation and will flag files that are overdue (>90 days) or missing `last_validated`. Use the JSON output to identify which files have freshness issues.

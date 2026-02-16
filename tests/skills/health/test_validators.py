@@ -208,14 +208,14 @@ class TestCheckCrossReferences(unittest.TestCase):
 
     def setUp(self):
         self.tmpdir = Path(tempfile.mkdtemp())
-        self.kb = self.tmpdir / "docs"
-        self.kb.mkdir()
+        self.knowledge_base = self.tmpdir / "docs"
+        self.knowledge_base.mkdir()
 
     def tearDown(self):
         shutil.rmtree(self.tmpdir)
 
     def test_valid_link_passes(self):
-        area = self.kb / "area"
+        area = self.knowledge_base / "area"
         area.mkdir()
         _write(area / "target.md", "# Target\n")
         f = _write(area / "source.md", "See [target](target.md) for details.\n")
@@ -223,7 +223,7 @@ class TestCheckCrossReferences(unittest.TestCase):
         self.assertEqual(issues, [])
 
     def test_broken_link_fails(self):
-        area = self.kb / "area"
+        area = self.knowledge_base / "area"
         area.mkdir()
         f = _write(area / "source.md", "See [missing](no-such-file.md) for details.\n")
         issues = check_cross_references(f, self.tmpdir)
@@ -231,7 +231,7 @@ class TestCheckCrossReferences(unittest.TestCase):
         self.assertTrue(any("no-such-file.md" in i["message"] for i in issues))
 
     def test_external_url_ignored(self):
-        area = self.kb / "area"
+        area = self.knowledge_base / "area"
         area.mkdir()
         f = _write(area / "source.md", "See [Google](https://google.com) for details.\n")
         issues = check_cross_references(f, self.tmpdir)
@@ -291,14 +291,14 @@ class TestCheckCoverage(unittest.TestCase):
 
     def setUp(self):
         self.tmpdir = Path(tempfile.mkdtemp())
-        self.kb = self.tmpdir / "docs"
-        self.kb.mkdir()
+        self.knowledge_base = self.tmpdir / "docs"
+        self.knowledge_base.mkdir()
 
     def tearDown(self):
         shutil.rmtree(self.tmpdir)
 
     def test_area_without_overview_fails(self):
-        area = self.kb / "some-area"
+        area = self.knowledge_base / "some-area"
         area.mkdir()
         _write(area / "topic.md", "# Topic\n")
         issues = check_coverage(self.tmpdir)
@@ -307,7 +307,7 @@ class TestCheckCoverage(unittest.TestCase):
         self.assertTrue(any(i["severity"] == "fail" for i in issues))
 
     def test_area_with_overview_passes(self):
-        area = self.kb / "some-area"
+        area = self.knowledge_base / "some-area"
         area.mkdir()
         _write(area / "overview.md", "# Overview\n")
         issues = check_coverage(self.tmpdir)
@@ -315,7 +315,7 @@ class TestCheckCoverage(unittest.TestCase):
         self.assertEqual(overview_issues, [])
 
     def test_topic_without_ref_warns(self):
-        area = self.kb / "area"
+        area = self.knowledge_base / "area"
         area.mkdir()
         _write(area / "overview.md", "# Overview\n")
         _write(area / "bidding.md", "# Bidding\n")
@@ -325,7 +325,7 @@ class TestCheckCoverage(unittest.TestCase):
         self.assertTrue(any(i["severity"] == "warn" for i in ref_issues))
 
     def test_proposals_dir_skipped(self):
-        proposals = self.kb / "_proposals"
+        proposals = self.knowledge_base / "_proposals"
         proposals.mkdir()
         _write(proposals / "draft.md", "# Draft\n")
         issues = check_coverage(self.tmpdir)
@@ -333,7 +333,7 @@ class TestCheckCoverage(unittest.TestCase):
         self.assertEqual(proposal_issues, [])
 
     def test_hidden_dir_skipped(self):
-        hidden = self.kb / ".dewey"
+        hidden = self.knowledge_base / ".dewey"
         hidden.mkdir()
         _write(hidden / "log.md", "# Log\n")
         issues = check_coverage(self.tmpdir)

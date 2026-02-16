@@ -44,14 +44,14 @@ from validators import (
 # Shared private helpers
 # ------------------------------------------------------------------
 
-def _discover_areas_and_topics(kb_root: Path, knowledge_dir_name: str = "docs") -> dict[str, list[Path]]:
+def _discover_areas_and_topics(knowledge_base_root: Path, knowledge_dir_name: str = "docs") -> dict[str, list[Path]]:
     """Scan filesystem for area dirs -> topic files.
 
     Returns ``{"area-slug": [Path, ...]}`` where each path is a ``.md``
     file inside that area dir (excluding ``overview.md``, ``.ref.md``,
     and ``index.md``).
     """
-    knowledge_dir = kb_root / knowledge_dir_name
+    knowledge_dir = knowledge_base_root / knowledge_dir_name
     if not knowledge_dir.is_dir():
         return {}
 
@@ -212,13 +212,13 @@ def _parse_curation_plan(text: str) -> list[dict]:
 # Validators
 # ------------------------------------------------------------------
 
-def check_manifest_sync(kb_root: Path, *, knowledge_dir_name: str = "docs") -> list[dict]:
+def check_manifest_sync(knowledge_base_root: Path, *, knowledge_dir_name: str = "docs") -> list[dict]:
     """Check AGENTS.md and CLAUDE.md are in sync with files on disk."""
     issues: list[dict] = []
-    areas_on_disk = _discover_areas_and_topics(kb_root, knowledge_dir_name)
+    areas_on_disk = _discover_areas_and_topics(knowledge_base_root, knowledge_dir_name)
 
     # --- AGENTS.md ---
-    agents_path = kb_root / "AGENTS.md"
+    agents_path = knowledge_base_root / "AGENTS.md"
     if agents_path.exists():
         agents_text = agents_path.read_text()
         has_managed = _managed_section(agents_text) is not None
@@ -265,7 +265,7 @@ def check_manifest_sync(kb_root: Path, *, knowledge_dir_name: str = "docs") -> l
             # AGENTS.md entries referencing nonexistent files
             for area_name, entries in agents_areas.items():
                 for entry in entries:
-                    ref_path = kb_root / entry["path"]
+                    ref_path = knowledge_base_root / entry["path"]
                     if not ref_path.exists():
                         issues.append({
                             "file": str(agents_path),
@@ -274,7 +274,7 @@ def check_manifest_sync(kb_root: Path, *, knowledge_dir_name: str = "docs") -> l
                         })
 
     # --- CLAUDE.md ---
-    claude_path = kb_root / "CLAUDE.md"
+    claude_path = knowledge_base_root / "CLAUDE.md"
     if claude_path.exists():
         claude_text = claude_path.read_text()
         has_claude_managed = _managed_section(claude_text) is not None
@@ -299,7 +299,7 @@ def check_manifest_sync(kb_root: Path, *, knowledge_dir_name: str = "docs") -> l
 
             # CLAUDE.md entries referencing nonexistent dirs/overviews
             for entry in claude_entries:
-                dir_path = kb_root / entry["path"].strip("/")
+                dir_path = knowledge_base_root / entry["path"].strip("/")
                 if not dir_path.is_dir():
                     issues.append({
                         "file": str(claude_path),
@@ -307,7 +307,7 @@ def check_manifest_sync(kb_root: Path, *, knowledge_dir_name: str = "docs") -> l
                         "severity": "warn",
                     })
                 if entry.get("overview"):
-                    overview_path = kb_root / entry["overview"]
+                    overview_path = knowledge_base_root / entry["overview"]
                     if not overview_path.exists():
                         issues.append({
                             "file": str(claude_path),
@@ -318,10 +318,10 @@ def check_manifest_sync(kb_root: Path, *, knowledge_dir_name: str = "docs") -> l
     return issues
 
 
-def check_curation_plan_sync(kb_root: Path, *, knowledge_dir_name: str = "docs") -> list[dict]:
+def check_curation_plan_sync(knowledge_base_root: Path, *, knowledge_dir_name: str = "docs") -> list[dict]:
     """Check curation plan checkboxes match files on disk."""
     issues: list[dict] = []
-    plan_path = kb_root / ".dewey" / "curation-plan.md"
+    plan_path = knowledge_base_root / ".dewey" / "curation-plan.md"
 
     if not plan_path.exists():
         return issues
@@ -332,10 +332,10 @@ def check_curation_plan_sync(kb_root: Path, *, knowledge_dir_name: str = "docs")
     if not items:
         return issues
 
-    knowledge_dir = kb_root / knowledge_dir_name
+    knowledge_dir = knowledge_base_root / knowledge_dir_name
 
     # Build set of topic files on disk (area/slug.md)
-    areas_on_disk = _discover_areas_and_topics(kb_root, knowledge_dir_name)
+    areas_on_disk = _discover_areas_and_topics(knowledge_base_root, knowledge_dir_name)
     disk_files: set[str] = set()
     for area_slug, topic_files in areas_on_disk.items():
         for tf in topic_files:
@@ -380,14 +380,14 @@ def check_curation_plan_sync(kb_root: Path, *, knowledge_dir_name: str = "docs")
 
 
 def check_proposal_integrity(
-    kb_root: Path,
+    knowledge_base_root: Path,
     *,
     knowledge_dir_name: str = "docs",
     max_age_days: int = 60,
 ) -> list[dict]:
     """Validate proposal files in _proposals/ directory."""
     issues: list[dict] = []
-    proposals_dir = kb_root / knowledge_dir_name / "_proposals"
+    proposals_dir = knowledge_base_root / knowledge_dir_name / "_proposals"
 
     if not proposals_dir.is_dir():
         return issues
@@ -453,10 +453,10 @@ def check_proposal_integrity(
     return issues
 
 
-def check_link_graph(kb_root: Path, *, knowledge_dir_name: str = "docs") -> list[dict]:
+def check_link_graph(knowledge_base_root: Path, *, knowledge_dir_name: str = "docs") -> list[dict]:
     """Check for orphaned files and overview completeness."""
     issues: list[dict] = []
-    knowledge_dir = kb_root / knowledge_dir_name
+    knowledge_dir = knowledge_base_root / knowledge_dir_name
 
     if not knowledge_dir.is_dir():
         return issues
@@ -615,14 +615,14 @@ def _is_companion_pair(path_a: Path, path_b: Path) -> bool:
 
 
 def check_duplicate_content(
-    kb_root: Path,
+    knowledge_base_root: Path,
     *,
     knowledge_dir_name: str = "docs",
     similarity_threshold: float = 0.4,
 ) -> list[dict]:
     """Detect duplicate paragraphs and high similarity between files."""
     issues: list[dict] = []
-    knowledge_dir = kb_root / knowledge_dir_name
+    knowledge_dir = knowledge_base_root / knowledge_dir_name
 
     if not knowledge_dir.is_dir():
         return issues
@@ -713,13 +713,13 @@ def check_duplicate_content(
 # ------------------------------------------------------------------
 
 def check_naming_conventions(
-    kb_root: Path,
+    knowledge_base_root: Path,
     *,
     knowledge_dir_name: str = "docs",
 ) -> list[dict]:
     """Check that file and directory names follow slug conventions."""
     issues: list[dict] = []
-    knowledge_dir = kb_root / knowledge_dir_name
+    knowledge_dir = knowledge_base_root / knowledge_dir_name
 
     if not knowledge_dir.is_dir():
         return issues

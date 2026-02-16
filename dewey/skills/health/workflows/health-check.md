@@ -20,7 +20,7 @@ If no knowledge base root can be found, report: "No knowledge base found. Looked
 ## Step 2: Run Tier 1 validators
 
 ```bash
-python3 ${CLAUDE_PLUGIN_ROOT}/skills/health/scripts/check_kb.py --kb-root <kb_root>
+python3 ${CLAUDE_PLUGIN_ROOT}/skills/health/scripts/check_kb.py --knowledge-base-root <knowledge_base_root>
 ```
 
 This runs all deterministic validators:

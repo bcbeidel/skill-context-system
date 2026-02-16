@@ -15,7 +15,7 @@ from templates import (
 
 
 def create_proposal(
-    kb_root: Path,
+    knowledge_base_root: Path,
     topic_name: str,
     relevance: str,
     proposed_by: str,
@@ -25,7 +25,7 @@ def create_proposal(
 
     Parameters
     ----------
-    kb_root:
+    knowledge_base_root:
         Root directory of the knowledge base.
     topic_name:
         Human-readable topic name (e.g. "Bid Strategies").
@@ -46,8 +46,8 @@ def create_proposal(
     FileNotFoundError
         If the _proposals/ directory does not exist.
     """
-    knowledge_dir = read_knowledge_dir(kb_root)
-    proposals_dir = kb_root / knowledge_dir / "_proposals"
+    knowledge_dir = read_knowledge_dir(knowledge_base_root)
+    proposals_dir = knowledge_base_root / knowledge_dir / "_proposals"
     if not proposals_dir.is_dir():
         raise FileNotFoundError(
             f"Proposals directory does not exist: {proposals_dir}"
@@ -69,7 +69,7 @@ if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser(description="Create a topic proposal.")
-    parser.add_argument("--kb-root", required=True, help="KB root directory")
+    parser.add_argument("--knowledge-base-root", required=True, help="Knowledge-base root directory")
     parser.add_argument("--topic", required=True, help="Topic name")
     parser.add_argument("--relevance", required=True, help="core / supporting / peripheral")
     parser.add_argument("--proposed-by", required=True, help="Who proposed the topic")
@@ -77,6 +77,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     result = create_proposal(
-        Path(args.kb_root), args.topic, args.relevance, args.proposed_by, args.rationale
+        Path(args.knowledge_base_root), args.topic, args.relevance, args.proposed_by, args.rationale
     )
     print(result)

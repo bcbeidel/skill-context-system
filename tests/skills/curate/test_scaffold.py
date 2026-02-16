@@ -13,13 +13,13 @@ from scaffold import (
     _read_topic_metadata,
     merge_managed_section,
     rebuild_index,
-    scaffold_kb,
+    scaffold_knowledge_base,
 )
 from templates import MARKER_BEGIN, MARKER_END
 
 
-class TestScaffoldKB(unittest.TestCase):
-    """Tests for the scaffold_kb function."""
+class TestScaffoldKnowledgeBase(unittest.TestCase):
+    """Tests for the scaffold_knowledge_base function."""
 
     def setUp(self):
         self.tmpdir = Path(tempfile.mkdtemp())
@@ -29,22 +29,22 @@ class TestScaffoldKB(unittest.TestCase):
 
     def test_creates_agents_md(self):
         """AGENTS.md exists after scaffold."""
-        scaffold_kb(self.tmpdir, "Paid Media Analyst")
+        scaffold_knowledge_base(self.tmpdir, "Paid Media Analyst")
         self.assertTrue((self.tmpdir / "AGENTS.md").is_file())
 
     def test_creates_knowledge_directory(self):
         """knowledge/ directory exists after scaffold."""
-        scaffold_kb(self.tmpdir, "Paid Media Analyst")
+        scaffold_knowledge_base(self.tmpdir, "Paid Media Analyst")
         self.assertTrue((self.tmpdir / "docs").is_dir())
 
     def test_creates_claude_md(self):
         """CLAUDE.md exists after scaffold."""
-        scaffold_kb(self.tmpdir, "Paid Media Analyst")
+        scaffold_knowledge_base(self.tmpdir, "Paid Media Analyst")
         self.assertTrue((self.tmpdir / "CLAUDE.md").is_file())
 
     def test_claude_md_references_agents(self):
         """CLAUDE.md references AGENTS.md."""
-        scaffold_kb(self.tmpdir, "Paid Media Analyst")
+        scaffold_knowledge_base(self.tmpdir, "Paid Media Analyst")
         content = (self.tmpdir / "CLAUDE.md").read_text()
         self.assertIn("AGENTS.md", content)
 
@@ -52,7 +52,7 @@ class TestScaffoldKB(unittest.TestCase):
         """Existing CLAUDE.md is preserved with knowledge base section appended."""
         claude_path = self.tmpdir / "CLAUDE.md"
         claude_path.write_text("# Custom content\n")
-        scaffold_kb(self.tmpdir, "Paid Media Analyst")
+        scaffold_knowledge_base(self.tmpdir, "Paid Media Analyst")
         content = claude_path.read_text()
         self.assertIn("# Custom content", content)
         self.assertIn(MARKER_BEGIN, content)
@@ -62,7 +62,7 @@ class TestScaffoldKB(unittest.TestCase):
         """Existing AGENTS.md is preserved with knowledge base section appended."""
         agents_path = self.tmpdir / "AGENTS.md"
         agents_path.write_text("# My Custom Role\n\nCustom persona text.\n")
-        scaffold_kb(self.tmpdir, "Paid Media Analyst")
+        scaffold_knowledge_base(self.tmpdir, "Paid Media Analyst")
         content = agents_path.read_text()
         self.assertIn("# My Custom Role", content)
         self.assertIn("Custom persona text.", content)
@@ -72,17 +72,17 @@ class TestScaffoldKB(unittest.TestCase):
 
     def test_creates_index_md(self):
         """knowledge/index.md exists after scaffold."""
-        scaffold_kb(self.tmpdir, "Paid Media Analyst")
+        scaffold_knowledge_base(self.tmpdir, "Paid Media Analyst")
         self.assertTrue((self.tmpdir / "docs" / "index.md").is_file())
 
     def test_creates_proposals_directory(self):
         """knowledge/_proposals/ directory exists after scaffold."""
-        scaffold_kb(self.tmpdir, "Paid Media Analyst")
+        scaffold_knowledge_base(self.tmpdir, "Paid Media Analyst")
         self.assertTrue((self.tmpdir / "docs" / "_proposals").is_dir())
 
     def test_creates_dewey_directories(self):
         """.dewey/health, .dewey/history, .dewey/utilization exist."""
-        scaffold_kb(self.tmpdir, "Paid Media Analyst")
+        scaffold_knowledge_base(self.tmpdir, "Paid Media Analyst")
         for subdir in ("health", "history", "utilization"):
             with self.subTest(subdir=subdir):
                 self.assertTrue(
@@ -92,13 +92,13 @@ class TestScaffoldKB(unittest.TestCase):
 
     def test_agents_md_contains_role(self):
         """AGENTS.md content includes the role name."""
-        scaffold_kb(self.tmpdir, "Paid Media Analyst")
+        scaffold_knowledge_base(self.tmpdir, "Paid Media Analyst")
         content = (self.tmpdir / "AGENTS.md").read_text()
         self.assertIn("Paid Media Analyst", content)
 
     def test_creates_domain_area_with_overview(self):
         """knowledge/{slug}/overview.md exists for each domain area."""
-        scaffold_kb(
+        scaffold_knowledge_base(
             self.tmpdir,
             "Paid Media Analyst",
             domain_areas=["Campaign Management", "Measurement"],
@@ -112,7 +112,7 @@ class TestScaffoldKB(unittest.TestCase):
 
     def test_agents_md_under_100_lines(self):
         """AGENTS.md stays under 100 lines."""
-        scaffold_kb(
+        scaffold_knowledge_base(
             self.tmpdir,
             "Paid Media Analyst",
             domain_areas=["Campaign Management", "Measurement"],
@@ -123,12 +123,12 @@ class TestScaffoldKB(unittest.TestCase):
 
     def test_scaffold_returns_summary(self):
         """Return value contains 'created'."""
-        result = scaffold_kb(self.tmpdir, "Paid Media Analyst")
+        result = scaffold_knowledge_base(self.tmpdir, "Paid Media Analyst")
         self.assertIn("created", result.lower())
 
     def test_index_md_contains_domain_area_links(self):
         """index.md links to domain areas."""
-        scaffold_kb(
+        scaffold_knowledge_base(
             self.tmpdir,
             "Paid Media Analyst",
             domain_areas=["Campaign Management", "Measurement"],
@@ -139,25 +139,25 @@ class TestScaffoldKB(unittest.TestCase):
 
     def test_claude_md_contains_markers(self):
         """CLAUDE.md contains managed-section markers."""
-        scaffold_kb(self.tmpdir, "Paid Media Analyst")
+        scaffold_knowledge_base(self.tmpdir, "Paid Media Analyst")
         content = (self.tmpdir / "CLAUDE.md").read_text()
         self.assertIn(MARKER_BEGIN, content)
         self.assertIn(MARKER_END, content)
 
     def test_agents_md_contains_markers(self):
         """AGENTS.md contains managed-section markers."""
-        scaffold_kb(self.tmpdir, "Paid Media Analyst")
+        scaffold_knowledge_base(self.tmpdir, "Paid Media Analyst")
         content = (self.tmpdir / "AGENTS.md").read_text()
         self.assertIn(MARKER_BEGIN, content)
         self.assertIn(MARKER_END, content)
 
     def test_merge_is_idempotent(self):
         """Running scaffold twice produces the same content."""
-        scaffold_kb(self.tmpdir, "Paid Media Analyst", domain_areas=["Testing"])
+        scaffold_knowledge_base(self.tmpdir, "Paid Media Analyst", domain_areas=["Testing"])
         claude_first = (self.tmpdir / "CLAUDE.md").read_text()
         agents_first = (self.tmpdir / "AGENTS.md").read_text()
 
-        scaffold_kb(self.tmpdir, "Paid Media Analyst", domain_areas=["Testing"])
+        scaffold_knowledge_base(self.tmpdir, "Paid Media Analyst", domain_areas=["Testing"])
         claude_second = (self.tmpdir / "CLAUDE.md").read_text()
         agents_second = (self.tmpdir / "AGENTS.md").read_text()
 
@@ -166,8 +166,8 @@ class TestScaffoldKB(unittest.TestCase):
 
     def test_merge_updates_managed_section(self):
         """Re-running with new areas updates the managed section."""
-        scaffold_kb(self.tmpdir, "Analyst", domain_areas=["Testing"])
-        scaffold_kb(self.tmpdir, "Analyst", domain_areas=["Testing", "Backend"])
+        scaffold_knowledge_base(self.tmpdir, "Analyst", domain_areas=["Testing"])
+        scaffold_knowledge_base(self.tmpdir, "Analyst", domain_areas=["Testing", "Backend"])
 
         claude_content = (self.tmpdir / "CLAUDE.md").read_text()
         self.assertIn("Backend", claude_content)
@@ -175,13 +175,13 @@ class TestScaffoldKB(unittest.TestCase):
 
     def test_summary_reports_merged(self):
         """Summary says 'merged' when files already existed."""
-        scaffold_kb(self.tmpdir, "Analyst")
-        result = scaffold_kb(self.tmpdir, "Analyst")
+        scaffold_knowledge_base(self.tmpdir, "Analyst")
+        result = scaffold_knowledge_base(self.tmpdir, "Analyst")
         self.assertIn("merged", result.lower())
 
     def test_starter_topics_in_summary(self):
         """Summary includes curate plan when starter_topics provided."""
-        result = scaffold_kb(
+        result = scaffold_knowledge_base(
             self.tmpdir,
             "Analyst",
             domain_areas=["Testing"],
@@ -192,7 +192,7 @@ class TestScaffoldKB(unittest.TestCase):
 
     def test_creates_curation_plan_with_starter_topics(self):
         """scaffold creates .dewey/curation-plan.md when starter_topics provided."""
-        scaffold_kb(
+        scaffold_knowledge_base(
             self.tmpdir,
             "Analyst",
             domain_areas=["Testing"],
@@ -208,13 +208,13 @@ class TestScaffoldKB(unittest.TestCase):
 
     def test_no_curation_plan_without_starter_topics(self):
         """scaffold does not create curation plan when no starter_topics."""
-        scaffold_kb(self.tmpdir, "Analyst", domain_areas=["Testing"])
+        scaffold_knowledge_base(self.tmpdir, "Analyst", domain_areas=["Testing"])
         plan_path = self.tmpdir / ".dewey" / "curation-plan.md"
         self.assertFalse(plan_path.exists())
 
     def test_curation_plan_in_summary(self):
         """Summary lists .dewey/curation-plan.md as created."""
-        result = scaffold_kb(
+        result = scaffold_knowledge_base(
             self.tmpdir,
             "Analyst",
             domain_areas=["Testing"],
@@ -224,7 +224,7 @@ class TestScaffoldKB(unittest.TestCase):
 
     def test_creates_config_json(self):
         """scaffold creates .dewey/config.json with default knowledge_dir."""
-        scaffold_kb(self.tmpdir, "Analyst")
+        scaffold_knowledge_base(self.tmpdir, "Analyst")
         config_path = self.tmpdir / ".dewey" / "config.json"
         self.assertTrue(config_path.is_file())
         import json
@@ -233,7 +233,7 @@ class TestScaffoldKB(unittest.TestCase):
 
     def test_custom_knowledge_dir(self):
         """scaffold with custom knowledge_dir creates the named directory."""
-        scaffold_kb(self.tmpdir, "Analyst", knowledge_dir="knowledge")
+        scaffold_knowledge_base(self.tmpdir, "Analyst", knowledge_dir="knowledge")
         self.assertTrue((self.tmpdir / "knowledge").is_dir())
         self.assertTrue((self.tmpdir / "knowledge" / "_proposals").is_dir())
         self.assertTrue((self.tmpdir / "knowledge" / "index.md").is_file())
@@ -244,7 +244,7 @@ class TestScaffoldKB(unittest.TestCase):
 
     def test_custom_knowledge_dir_in_summary(self):
         """Summary uses the actual knowledge dir name, not hardcoded 'docs'."""
-        result = scaffold_kb(
+        result = scaffold_knowledge_base(
             self.tmpdir,
             "Analyst",
             domain_areas=["Testing"],
@@ -255,19 +255,19 @@ class TestScaffoldKB(unittest.TestCase):
 
     def test_custom_knowledge_dir_in_claude_md(self):
         """CLAUDE.md references the custom knowledge directory."""
-        scaffold_kb(self.tmpdir, "Analyst", knowledge_dir="kb")
+        scaffold_knowledge_base(self.tmpdir, "Analyst", knowledge_dir="knowledge")
         content = (self.tmpdir / "CLAUDE.md").read_text()
-        self.assertIn("kb/", content)
+        self.assertIn("knowledge/", content)
 
     def test_custom_knowledge_dir_in_agents_md(self):
         """AGENTS.md references the custom knowledge directory."""
-        scaffold_kb(self.tmpdir, "Analyst", knowledge_dir="kb")
+        scaffold_knowledge_base(self.tmpdir, "Analyst", knowledge_dir="knowledge")
         content = (self.tmpdir / "AGENTS.md").read_text()
-        self.assertIn("`kb/`", content)
+        self.assertIn("`knowledge/`", content)
 
     def test_reinit_preserves_topic_entries(self):
         """Re-running scaffold preserves topic entries in AGENTS.md."""
-        scaffold_kb(self.tmpdir, "Analyst", domain_areas=["Testing"])
+        scaffold_knowledge_base(self.tmpdir, "Analyst", domain_areas=["Testing"])
         # Simulate curate-promote adding a topic
         agents = self.tmpdir / "AGENTS.md"
         content = agents.read_text()
@@ -278,14 +278,14 @@ class TestScaffoldKB(unittest.TestCase):
         )
         agents.write_text(content)
         # Re-scaffold
-        scaffold_kb(self.tmpdir, "Analyst", domain_areas=["Testing"])
+        scaffold_knowledge_base(self.tmpdir, "Analyst", domain_areas=["Testing"])
         new_content = agents.read_text()
         self.assertIn("Unit Tests", new_content)
         self.assertIn("How to write unit tests", new_content)
 
     def test_reinit_preserves_topics_when_adding_areas(self):
         """Adding new areas preserves existing topic entries."""
-        scaffold_kb(self.tmpdir, "Analyst", domain_areas=["Testing"])
+        scaffold_knowledge_base(self.tmpdir, "Analyst", domain_areas=["Testing"])
         agents = self.tmpdir / "AGENTS.md"
         content = agents.read_text()
         content = content.replace(
@@ -294,29 +294,29 @@ class TestScaffoldKB(unittest.TestCase):
             "| [Unit Tests](docs/testing/unit-tests.md) | How to write unit tests |\n",
         )
         agents.write_text(content)
-        scaffold_kb(self.tmpdir, "Analyst", domain_areas=["Testing", "Backend"])
+        scaffold_knowledge_base(self.tmpdir, "Analyst", domain_areas=["Testing", "Backend"])
         new_content = agents.read_text()
         self.assertIn("Unit Tests", new_content)
         self.assertIn("### Backend", new_content)
 
     def test_index_md_updated_on_reinit(self):
         """index.md includes new areas after re-scaffold."""
-        scaffold_kb(self.tmpdir, "Analyst", domain_areas=["Testing"])
-        scaffold_kb(self.tmpdir, "Analyst", domain_areas=["Testing", "Backend"])
+        scaffold_knowledge_base(self.tmpdir, "Analyst", domain_areas=["Testing"])
+        scaffold_knowledge_base(self.tmpdir, "Analyst", domain_areas=["Testing", "Backend"])
         content = (self.tmpdir / "docs" / "index.md").read_text()
         self.assertIn("backend/overview.md", content)
         self.assertIn("testing/overview.md", content)
 
     def test_curation_plan_preserves_progress_on_reinit(self):
         """Re-scaffold preserves [x] checkmarks in curation plan."""
-        scaffold_kb(
+        scaffold_knowledge_base(
             self.tmpdir, "Analyst",
             domain_areas=["Testing"],
             starter_topics={"Testing": ["Unit Testing"]},
         )
         plan = self.tmpdir / ".dewey" / "curation-plan.md"
         plan.write_text(plan.read_text().replace("- [ ] Unit Testing", "- [x] Unit Testing"))
-        scaffold_kb(
+        scaffold_knowledge_base(
             self.tmpdir, "Analyst",
             domain_areas=["Testing", "Backend"],
             starter_topics={"Testing": ["Unit Testing"], "Backend": ["APIs"]},
@@ -327,12 +327,12 @@ class TestScaffoldKB(unittest.TestCase):
 
     def test_curation_plan_no_duplicate_areas(self):
         """Re-scaffold doesn't duplicate existing plan areas."""
-        scaffold_kb(
+        scaffold_knowledge_base(
             self.tmpdir, "Analyst",
             domain_areas=["Testing"],
             starter_topics={"Testing": ["Unit Testing"]},
         )
-        scaffold_kb(
+        scaffold_knowledge_base(
             self.tmpdir, "Analyst",
             domain_areas=["Testing"],
             starter_topics={"Testing": ["Unit Testing"]},
@@ -342,7 +342,7 @@ class TestScaffoldKB(unittest.TestCase):
 
     def test_creates_hooks_json(self):
         """.claude/hooks.json is created with utilization hook."""
-        scaffold_kb(self.tmpdir, "Analyst")
+        scaffold_knowledge_base(self.tmpdir, "Analyst")
         hooks_path = self.tmpdir / ".claude" / "hooks.json"
         self.assertTrue(hooks_path.exists())
         parsed = json.loads(hooks_path.read_text())
@@ -354,13 +354,13 @@ class TestScaffoldKB(unittest.TestCase):
         hooks_dir.mkdir(parents=True, exist_ok=True)
         hooks_path = hooks_dir / "hooks.json"
         hooks_path.write_text('{"custom": true}\n')
-        scaffold_kb(self.tmpdir, "Analyst")
+        scaffold_knowledge_base(self.tmpdir, "Analyst")
         content = hooks_path.read_text()
         self.assertEqual(content, '{"custom": true}\n')
 
     def test_hooks_json_in_summary(self):
         """Summary lists .claude/hooks.json as created."""
-        result = scaffold_kb(self.tmpdir, "Analyst")
+        result = scaffold_knowledge_base(self.tmpdir, "Analyst")
         self.assertIn(".claude/hooks.json", result)
 
 
@@ -450,8 +450,8 @@ class TestDiscoverIndexData(unittest.TestCase):
 
     def setUp(self):
         self.tmpdir = Path(tempfile.mkdtemp())
-        self.kb = self.tmpdir / "docs"
-        self.kb.mkdir()
+        self.knowledge_base = self.tmpdir / "docs"
+        self.knowledge_base.mkdir()
         (self.tmpdir / ".dewey").mkdir()
         (self.tmpdir / ".dewey" / "config.json").write_text('{"knowledge_dir": "docs"}')
 
@@ -478,7 +478,7 @@ class TestDiscoverIndexData(unittest.TestCase):
 
     def test_discovers_area_with_topics(self):
         """Discovers area with topics, excludes overview.md and .ref.md."""
-        area = self.kb / "testing"
+        area = self.knowledge_base / "testing"
         self._write(area / "overview.md", self._valid_overview("Testing"))
         self._write(area / "unit-tests.md", self._valid_topic("Unit Tests"))
         self._write(area / "unit-tests.ref.md", "reference content")
@@ -495,7 +495,7 @@ class TestDiscoverIndexData(unittest.TestCase):
 
     def test_reads_depth_from_frontmatter(self):
         """Verifies topic depth is read correctly from frontmatter."""
-        area = self.kb / "testing"
+        area = self.knowledge_base / "testing"
         self._write(area / "overview.md", self._valid_overview("Testing"))
         self._write(area / "deep-dive.md", self._valid_topic("Deep Dive", depth="comprehensive"))
 
@@ -506,7 +506,7 @@ class TestDiscoverIndexData(unittest.TestCase):
 
     def test_extracts_heading_as_name(self):
         """Verifies H1 heading is used as topic name."""
-        area = self.kb / "testing"
+        area = self.knowledge_base / "testing"
         self._write(area / "overview.md", self._valid_overview("Testing"))
         self._write(area / "my-topic.md", self._valid_topic("My Fancy Topic Name"))
 
@@ -517,9 +517,9 @@ class TestDiscoverIndexData(unittest.TestCase):
 
     def test_skips_proposals_directory(self):
         """Directories starting with _ are excluded."""
-        self._write(self.kb / "_proposals" / "idea.md", self._valid_topic("Idea"))
-        self._write(self.kb / "testing" / "overview.md", self._valid_overview("Testing"))
-        self._write(self.kb / "testing" / "topic.md", self._valid_topic("Topic"))
+        self._write(self.knowledge_base / "_proposals" / "idea.md", self._valid_topic("Idea"))
+        self._write(self.knowledge_base / "testing" / "overview.md", self._valid_overview("Testing"))
+        self._write(self.knowledge_base / "testing" / "topic.md", self._valid_topic("Topic"))
 
         result = _discover_index_data(self.tmpdir, "docs")
 
@@ -535,7 +535,7 @@ class TestDiscoverIndexData(unittest.TestCase):
     def test_areas_sorted_alphabetically(self):
         """Areas are sorted by dirname."""
         for name in ["zebra", "alpha", "middle"]:
-            area = self.kb / name
+            area = self.knowledge_base / name
             self._write(area / "overview.md", self._valid_overview(name.title()))
             self._write(area / "topic.md", self._valid_topic("Topic"))
 
@@ -546,7 +546,7 @@ class TestDiscoverIndexData(unittest.TestCase):
 
     def test_topics_sorted_alphabetically(self):
         """Topics are sorted by filename."""
-        area = self.kb / "testing"
+        area = self.knowledge_base / "testing"
         self._write(area / "overview.md", self._valid_overview("Testing"))
         self._write(area / "z-topic.md", self._valid_topic("Z Topic"))
         self._write(area / "a-topic.md", self._valid_topic("A Topic"))
@@ -559,7 +559,7 @@ class TestDiscoverIndexData(unittest.TestCase):
 
     def test_area_name_falls_back_to_dirname(self):
         """When overview.md has no H1, area name falls back to directory name."""
-        area = self.kb / "my-area"
+        area = self.knowledge_base / "my-area"
         self._write(area / "overview.md", "---\ndepth: overview\n---\nNo heading here.\n")
         self._write(area / "topic.md", self._valid_topic("Topic"))
 
@@ -569,7 +569,7 @@ class TestDiscoverIndexData(unittest.TestCase):
 
     def test_topic_name_falls_back_to_filename(self):
         """When topic has no H1, name falls back to slugified filename."""
-        area = self.kb / "testing"
+        area = self.knowledge_base / "testing"
         self._write(area / "overview.md", self._valid_overview("Testing"))
         self._write(area / "some-topic.md", "---\ndepth: working\n---\nNo heading.\n")
 
@@ -623,7 +623,7 @@ class TestReadTopicMetadata(unittest.TestCase):
 
 
 class TestScaffoldIndexIncludesTopics(unittest.TestCase):
-    """scaffold_kb regenerates index.md with discovered topics."""
+    """scaffold_knowledge_base regenerates index.md with discovered topics."""
 
     def setUp(self):
         self.tmpdir = Path(tempfile.mkdtemp())
@@ -633,18 +633,18 @@ class TestScaffoldIndexIncludesTopics(unittest.TestCase):
 
     def test_index_md_includes_topics_on_reinit(self):
         """After adding topic files, re-scaffold picks them up in index.md."""
-        scaffold_kb(self.tmpdir, "Dev", domain_areas=["Testing"])
+        scaffold_knowledge_base(self.tmpdir, "Dev", domain_areas=["Testing"])
         # Manually create a topic file (simulating curate workflow)
         topic = self.tmpdir / "docs" / "testing" / "unit-testing.md"
         topic.write_text("---\nsources:\n  - url: https://example.com\n    title: Ex\nlast_validated: 2026-01-15\nrelevance: core\ndepth: working\n---\n# Unit Testing\n")
         # Re-scaffold
-        scaffold_kb(self.tmpdir, "Dev", domain_areas=["Testing"])
+        scaffold_knowledge_base(self.tmpdir, "Dev", domain_areas=["Testing"])
         index = (self.tmpdir / "docs" / "index.md").read_text()
         self.assertIn("Unit Testing", index)
         self.assertIn("unit-testing.md", index)
 
     def test_index_md_has_no_frontmatter(self):
-        scaffold_kb(self.tmpdir, "Dev", domain_areas=["Testing"])
+        scaffold_knowledge_base(self.tmpdir, "Dev", domain_areas=["Testing"])
         index = (self.tmpdir / "docs" / "index.md").read_text()
         self.assertFalse(index.startswith("---"))
 
@@ -654,7 +654,7 @@ class TestRebuildIndex(unittest.TestCase):
 
     def setUp(self):
         self.tmpdir = Path(tempfile.mkdtemp())
-        scaffold_kb(self.tmpdir, "Dev", domain_areas=["Testing"])
+        scaffold_knowledge_base(self.tmpdir, "Dev", domain_areas=["Testing"])
 
     def tearDown(self):
         shutil.rmtree(self.tmpdir)

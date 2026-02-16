@@ -530,14 +530,14 @@ def render_curate_plan(domain_areas: list[dict]) -> str:
     return "\n".join(header + lines).rstrip("\n") + "\n"
 
 
-def render_hooks_json(plugin_root: str, kb_root: str) -> str:
+def render_hooks_json(plugin_root: str, knowledge_base_root: str) -> str:
     """Render .claude/hooks.json for utilization tracking.
 
     Parameters
     ----------
     plugin_root:
         Absolute path to the dewey plugin root directory.
-    kb_root:
+    knowledge_base_root:
         Absolute path to the knowledge base root directory.
     """
     script_path = f"{plugin_root}/skills/health/scripts/hook_log_access.py"
@@ -549,7 +549,7 @@ def render_hooks_json(plugin_root: str, kb_root: str) -> str:
                     "hooks": [
                         {
                             "type": "command",
-                            "command": f"python3 {script_path} --kb-root {kb_root}",
+                            "command": f"python3 {script_path} --knowledge-base-root {knowledge_base_root}",
                         }
                     ],
                 }

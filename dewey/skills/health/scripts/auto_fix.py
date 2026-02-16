@@ -222,7 +222,7 @@ def fix_missing_cross_links(file_path: Path, issues: list[dict]) -> list[dict]:
     return actions
 
 
-def fix_curation_plan_checkmarks(kb_root: Path, *, knowledge_dir_name: str = "docs") -> list[dict]:
+def fix_curation_plan_checkmarks(knowledge_base_root: Path, *, knowledge_dir_name: str = "docs") -> list[dict]:
     """Check off curation plan items when matching files exist on disk.
 
     For each ``[ ]`` item in the curation plan, if the corresponding
@@ -234,11 +234,11 @@ def fix_curation_plan_checkmarks(kb_root: Path, *, knowledge_dir_name: str = "do
     from cross_validators import _parse_curation_plan
     from templates import _slugify
 
-    plan_path = kb_root / ".dewey" / "curation-plan.md"
+    plan_path = knowledge_base_root / ".dewey" / "curation-plan.md"
     if not plan_path.exists():
         return []
 
-    knowledge_dir = kb_root / knowledge_dir_name
+    knowledge_dir = knowledge_base_root / knowledge_dir_name
     plan_text = plan_path.read_text()
     items = _parse_curation_plan(plan_text)
 
