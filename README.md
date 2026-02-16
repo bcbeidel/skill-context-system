@@ -161,7 +161,9 @@ tests/                                # Test suite (536 tests)
 | Health history and baselines | Complete |
 | Utilization tracking | Infrastructure complete, auto-capture pending ([#3](https://github.com/bcbeidel/dewey/issues/3)) |
 | Tier 3 human decision queue | Designed, not yet tested ([#2](https://github.com/bcbeidel/dewey/issues/2)) |
-| Cross-provider support via MCP | Planned ([#1](https://github.com/bcbeidel/dewey/issues/1)) |
+| CI/CD eval pipeline | Planned ([#4](https://github.com/bcbeidel/dewey/issues/4)) |
+| Cross-provider support | Planned — [MCP server](https://github.com/bcbeidel/dewey/issues/1), [Cursor](https://github.com/bcbeidel/dewey/issues/5), [Copilot/Codex](https://github.com/bcbeidel/dewey/issues/6), [Gemini CLI](https://github.com/bcbeidel/dewey/issues/7), [Windsurf](https://github.com/bcbeidel/dewey/issues/8) |
+| Research: design principle validation | Planned — [context effectiveness](https://github.com/bcbeidel/dewey/issues/9), [cognitive load](https://github.com/bcbeidel/dewey/issues/10), [information foraging](https://github.com/bcbeidel/dewey/issues/11), [source provenance](https://github.com/bcbeidel/dewey/issues/12), [multi-agent sharing](https://github.com/bcbeidel/dewey/issues/13) |
 
 ## Documentation
 
