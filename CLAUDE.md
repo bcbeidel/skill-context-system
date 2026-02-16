@@ -40,7 +40,7 @@ dewey/
 
 ### Three-Tier Health Model
 
-1. **Tier 1 -- Deterministic (Python)** -- Fast automated checks in `validators.py`. Validates frontmatter, section ordering, cross-references, size bounds, source URLs, freshness, coverage. CI-friendly. No LLM required.
+1. **Tier 1 -- Deterministic (Python)** -- Fast automated checks run by `check_knowledge_base.py`. 18 per-file validators in `validators.py` (frontmatter, sections, size bounds, readability, sources, freshness, and more) plus 6 cross-file validators in `cross_validators.py` (manifest sync, curation plan sync, proposal integrity, link graph, duplicate detection, naming conventions). Auto-fix available via `auto_fix.py`. CI-friendly. No LLM required.
 2. **Tier 2 -- LLM-Assisted (Claude)** -- Pre-screener in `tier2_triggers.py` flags files with context data. Claude evaluates flagged items: source drift, depth accuracy, why-quality, in-practice concreteness, source primacy.
 3. **Tier 3 -- Human Judgment** -- Surfaces decisions requiring human input: relevance questions, scope decisions, pending proposals, conflict resolution.
 

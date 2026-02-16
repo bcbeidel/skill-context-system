@@ -14,6 +14,7 @@ Dewey currently runs as a Claude Code plugin. The knowledge base output format i
 |-------|---------|
 | `/dewey:curate` | Single entry point for all knowledge-base content operations: discover domains, scaffold structure, add/update topics, ingest URLs, manage proposals and curation plan |
 | `/dewey:health` | Validate quality, check freshness, analyze coverage gaps, generate reports |
+| `/dewey:report-issue` | Submit bug reports, feature ideas, or feedback to the Dewey GitHub repo |
 
 ### `/dewey:curate`
 
@@ -43,7 +44,7 @@ Three-tier health model for knowledge base validation:
 
 **Tier 1 -- Deterministic (Python):** 18 validators in `validators.py` plus 6 cross-file validators in `cross_validators.py`. Checks frontmatter, section ordering, cross-references, size bounds, coverage gaps, freshness, source URLs, readability (Flesch-Kincaid), duplicate content, naming conventions, and more. Auto-fix available for common issues.
 
-**Tier 2 -- LLM-Assisted (Claude):** Pre-screener with 5 triggers in `tier2_triggers.py` flags files needing deeper review. Claude evaluates: source drift, depth accuracy, why-quality, in-practice concreteness, source primacy.
+**Tier 2 -- LLM-Assisted (Claude):** Pre-screener with 9 triggers in `tier2_triggers.py` flags files needing deeper review. Claude evaluates: source drift, depth accuracy, why-quality, in-practice concreteness, source primacy, citation quality, source authority, provenance completeness, recommendation coverage.
 
 **Tier 3 -- Human Judgment:** Surfaces decisions requiring human input: relevance questions, scope decisions, pending proposals, conflict resolution.
 
@@ -138,7 +139,7 @@ dewey/
                health-coverage.md, health-freshness.md
       references/validation-rules.md, quality-dimensions.md, design-principles.md
 docs/plans/                           # Design documents
-tests/                                # Test suite (483 tests)
+tests/                                # Test suite (536 tests)
 ```
 
 ## Status
@@ -151,7 +152,7 @@ tests/                                # Test suite (483 tests)
 | URL ingestion with source evaluation | Complete |
 | Curation plan management | Complete |
 | Tier 1 deterministic health checks | Complete (18 validators + 6 cross-validators) |
-| Tier 2 LLM-assisted health assessments | Complete (5 triggers + audit workflow) |
+| Tier 2 LLM-assisted health assessments | Complete (9 triggers + audit workflow) |
 | Readability and duplicate content detection | Complete |
 | Auto-fix for common issues | Complete |
 | Health history and baselines | Complete |
