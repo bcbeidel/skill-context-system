@@ -15,7 +15,7 @@ Capture the JSON output. It contains two top-level sections:
 
 Present the Tier 1 summary as in the health-check workflow.
 
-The Tier 2 pre-screener runs 5 deterministic triggers on each file and returns a structured queue with context data for each item. Present the trigger summary:
+The Tier 2 pre-screener runs 6 deterministic triggers on each file and returns a structured queue with context data for each item. Present the trigger summary:
 
 | Trigger | Count | Description |
 |---------|-------|-------------|
@@ -24,8 +24,49 @@ The Tier 2 pre-screener runs 5 deterministic triggers on each file and returns a
 | source_primacy | N | Working files with low inline citation density |
 | why_quality | N | Working files with missing or thin "Why This Matters" |
 | concrete_examples | N | Working files with missing or abstract "In Practice" |
+| citation_quality | N | Working files with duplicate inline citation URLs |
 
 "**Tier 2 evaluation queue:** <N> items across <M> files."
+
+### Calibration Anchors
+
+Before assessing queue items, review these reference verdicts to ensure consistent thresholds across all evaluations:
+
+**source_drift — Flag:**
+The source URL has been updated with new API endpoints, changed pricing tiers, or deprecated features not reflected in the KB entry. The KB makes claims the source no longer supports.
+
+**source_drift — OK:**
+Minor wording changes or page redesign, but the substantive claims and recommendations in the KB still align with the source content.
+
+**depth_accuracy — Flag:**
+A working-depth file where "In Practice" contains only bold-header + 2-bullet enumeration lists (no scenarios, worked examples, or code). Reads as a reference checklist rather than actionable working guidance.
+
+**depth_accuracy — OK:**
+A working-depth file where low prose ratio is caused by code blocks, tables, and markdown link URLs. The non-prose elements ARE the substance.
+
+**why_quality — Flag:**
+"Why This Matters" describes *what* the topic is ("Fair lending laws regulate marketing practices") without explaining *why* it matters to this role ("Non-compliant targeting can trigger regulatory action and halt campaigns").
+
+**why_quality — OK:**
+"Why This Matters" connects the topic to role outcomes, stakes, or consequences. The reader understands what they risk by ignoring this topic.
+
+**concrete_examples — Flag:**
+"In Practice" describes a process in abstract terms ("configure the schema," "set up the pipeline") without a single code block, config snippet, table, or specific value. A prose description of what an example "might look like" also counts as a flag.
+
+**concrete_examples — OK:**
+"In Practice" includes worked scenarios with specific names, values, or artifacts (code blocks, tables, inventory entries, SQL snippets). Someone could follow this in a real implementation.
+
+**source_primacy — Flag:**
+10 recommendations with only 1 inline citation. OR: the same generic documentation URL cited 3+ times for different claims. The citations don't trace to information that specifically supports each claim.
+
+**source_primacy — OK:**
+8 recommendations with 3 inline citations from distinct, specific sources. Each cited URL leads to content directly addressing the claim it backs. Uncited items are standard practice or experience-based cautions.
+
+**citation_quality — Flag:**
+A single documentation index page (e.g., the Feature Store overview) cited to back claims about PII handling, offline stores, AND encoding strategies. The URL is technically relevant but too broad to serve as provenance for any specific claim.
+
+**citation_quality — OK:**
+Each inline citation links to a page or section that directly addresses the specific claim. Different claims cite different URLs, or the same URL only when it genuinely covers both claims.
 
 ## Step 2: Perform Tier 2 LLM assessment
 
@@ -77,6 +118,10 @@ Flag if the section is abstract or generic.
 
 For items with `trigger: source_primacy`, the context includes `recommendation_count`, `inline_source_count`, and `sections_checked`. Evaluate whether the guidance is adequately backed by inline citations to authoritative sources.
 
+### 2f. Citation quality
+
+For items with `trigger: citation_quality`, the context includes `duplicate_urls`, `total_inline_citations`, and `unique_inline_citations`. Evaluate whether the duplicated URLs genuinely support each claim they're cited for, or whether they are generic pages being reused to satisfy citation count thresholds. A single documentation index page cited 3 times for different claims is a flag; the same URL cited for closely related points within a single recommendation may be OK.
+
 ## Step 3: Persist results
 
 Write the combined Tier 2 assessment to `.dewey/health/tier2-report.json` so `health-review.md` can read results without re-running:
@@ -117,13 +162,54 @@ Format the combined Tier 1 + Tier 2 report:
 - Entries with depth mismatches -> "Consider changing the depth label or restructuring the content."
 - Entries with weak Why/In Practice -> "Strengthen these sections with causal reasoning and concrete examples."
 - If many entries are flagged -> "Consider running `/dewey:health review` to surface items for human decision."
+
+## Step 6: Remediation standards
+
+When fixing flagged items (either now or in a follow-up session), all new content must meet the same standards that triggered the original flag:
+
+**Source Primacy fixes:**
+- Each citation must link to a page that directly addresses the specific claim. A generic documentation index is not adequate backing for a specific technical recommendation.
+- Do not reuse the same URL for multiple distinct claims unless the page genuinely covers both.
+- If you cannot find a specific source for a claim, state it as experience-based guidance ("in most implementations," "typically") rather than fabricating a citation.
+
+**Concrete Example fixes:**
+- Examples must be implementable artifacts: code blocks, config snippets, schema fragments, table entries with realistic values.
+- A prose description of what an example "might look like" does not satisfy the concrete examples requirement.
+
+**Overview/orientation fixes:**
+- New prose making factual claims (latency values, architectural relationships, platform behaviors) must cite sources or qualify with hedging language.
+- Do not introduce uncited factual assertions while fixing other issues.
+
+**Self-check:** Before completing remediation, verify that every new paragraph you wrote would pass the same Tier 2 assessment that flagged the original content.
+
+## Step 7: Verify remediation
+
+After making fixes, re-run the combined check to confirm improvements and detect regressions:
+
+```bash
+python3 ${CLAUDE_PLUGIN_ROOT}/skills/health/scripts/check_kb.py --kb-root <kb_root> --both
+```
+
+Compare the results against the initial run from Step 1:
+
+1. **File count:** Same, increased, or decreased? A decrease may indicate lost content.
+2. **Previously flagged items:** Are they resolved or still present?
+3. **New issues:** Did remediation introduce new Tier 1 failures or Tier 2 triggers?
+
+Update `.dewey/health/tier2-report.json` with the **post-remediation** assessment. The report on disk must always reflect the current state of the knowledge base, not a prior state.
+
+If new issues were introduced, address them before finalizing. The report is not complete until it reflects the actual current content.
 </process>
 
 <success_criteria>
 - Combined `--both` invocation runs successfully, producing tier1 and tier2 sections
 - Tier 1 results are presented and Tier 2 pre-screener produces a structured trigger queue with context data
+- Assessment agents consult calibration anchors before evaluating
 - Each Tier 2 assessment uses pre-computed context to focus evaluation
 - Combined report clearly separates Tier 1 and Tier 2 findings
 - Results are persisted to `.dewey/health/tier2-report.json`
 - Recommendations are actionable and specific to each finding
+- Remediation content meets the same quality standards as existing content
+- Post-remediation verification confirms fixes and detects regressions
+- Final tier2-report.json reflects the current state, not pre-remediation state
 </success_criteria>
